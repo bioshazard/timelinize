@@ -1,3 +1,9 @@
+> **bios fork — modified 2026-11-16.** Maintained downstream of
+> [timelinize/timelinize](https://github.com/timelinize/timelinize), under the
+> original **AGPL-3.0-or-later** terms. This is an unofficial development build.
+> See [FORK.md](FORK.md) for fixes, attribution, validation and known limits.
+> AI assistance was used to implement and review downstream changes.
+
 <a href="https://timelinize.com">
 	<picture>
 		<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/timelinize/timelinize/main/frontend/resources/images/logo-dark.svg">
