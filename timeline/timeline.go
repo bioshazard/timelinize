@@ -1436,6 +1436,18 @@ func (p *processor) distillUpdatePolicies(incoming *Item, existing ItemRow) erro
 			incoming.fieldUpdatePolicies[pref.Field] = policy
 		}
 	}
+	// Importers emit multipart items using a retrieval key. Only a match on
+	// that exact key authorizes importer-specific field precedence; a generic
+	// content/original-ID match must still respect the user's preferences.
+	if len(incoming.Retrieval.key) > 0 && bytes.Equal(incoming.Retrieval.key, existing.RetrievalKey) {
+		if incoming.fieldUpdatePolicies == nil {
+			incoming.fieldUpdatePolicies = make(map[string]FieldUpdatePolicy)
+		}
+		for field, policy := range incoming.Retrieval.FieldUpdatePolicies {
+			incoming.fieldUpdatePolicies[field] = policy
+		}
+	}
+
 	return nil
 }
 

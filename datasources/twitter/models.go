@@ -31,6 +31,7 @@ import (
 	"math"
 	"net/url"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -406,36 +407,107 @@ func (t *tweet) isEmpty() bool {
 
 // text returns the full text of the tweet, with entities added inline.
 func (t *tweet) text() string {
-	txt := t.rawText()
-	expandedText := html.UnescapeString(txt)
-
-	// replace any annoying t.co shortened URLs with their fully-expanded form
-	if t.Entities != nil {
-		for _, urlEnt := range t.Entities.URLs {
-			const requiredCount = 2
-			if len(urlEnt.Indices) != requiredCount {
-				continue
-			}
-			textToReplace := txt[urlEnt.Indices[0]:urlEnt.Indices[1]]
-			expandedText = strings.Replace(expandedText, textToReplace, urlEnt.ExpandedURL, 1)
-		}
+	// A retweet's entities describe the outer (possibly truncated) text, not
+	// the expanded nested status. Apply only the nested status's own entities.
+	if t.RetweetedStatus != nil {
+		return t.retweetText(t.RetweetedStatus.text())
 	}
 
-	// replace any links to embedded media with the full URL
-	// (although, this is not necessary, because we link the
-	// media in our own way, without a URL)
+	txt := t.rawText()
+	type replacement struct {
+		start, end int
+		text       string
+	}
+	var replacements []replacement
+	add := func(indices []transInt, shortURL, expandedURL string) {
+		if len(indices) != 2 || shortURL == "" || expandedURL == "" {
+			return
+		}
+		start, startOK := utf16ByteOffset(txt, indices[0])
+		end, endOK := utf16ByteOffset(txt, indices[1])
+		// Refuse malformed/stale ranges rather than replacing unrelated text.
+		if !startOK || !endOK || start >= end || txt[start:end] != shortURL {
+			return
+		}
+		replacements = append(replacements, replacement{start, end, expandedURL})
+	}
+	if t.Entities != nil {
+		for _, ent := range t.Entities.URLs {
+			add(ent.Indices, ent.URL, ent.ExpandedURL)
+		}
+	}
 	if t.ExtendedEntities != nil {
 		for _, ent := range t.ExtendedEntities.Media {
-			const requiredCount = 2
-			if len(ent.Indices) != requiredCount {
+			if ent == nil {
 				continue
 			}
-			textToReplace := txt[ent.Indices[0]:ent.Indices[1]]
-			expandedText = strings.Replace(expandedText, textToReplace, ent.ExpandedURL, 1)
+			add(ent.Indices, ent.URL, ent.ExpandedURL)
 		}
 	}
 
-	return expandedText
+	// Offsets are UTF-16 code units in the original escaped text. Replace
+	// right-to-left so expansion cannot shift another entity's source span.
+	sort.Slice(replacements, func(i, j int) bool {
+		if replacements[i].start == replacements[j].start {
+			if replacements[i].end == replacements[j].end {
+				return replacements[i].text < replacements[j].text
+			}
+			return replacements[i].end < replacements[j].end
+		}
+		return replacements[i].start < replacements[j].start
+	})
+	expandedText := txt
+	for i := len(replacements) - 1; i >= 0; i-- {
+		r := replacements[i]
+		// Identical duplicate entities are common; conflicting or overlapping
+		// spans are ambiguous and must leave the original source text intact.
+		conflict := false
+		duplicate := false
+		for j, other := range replacements {
+			if i == j || r.end <= other.start || other.end <= r.start {
+				continue
+			}
+			if r == other {
+				duplicate = duplicate || j > i
+			} else {
+				conflict = true
+			}
+		}
+		if !conflict && !duplicate {
+			expandedText = expandedText[:r.start] + r.text + expandedText[r.end:]
+		}
+	}
+	return html.UnescapeString(expandedText)
+}
+
+// utf16ByteOffset converts a Twitter entity index to a UTF-8 byte boundary.
+// A position inside a surrogate pair, a negative position, or a position past
+// the source text is invalid. It never slices the string at an invalid boundary.
+func utf16ByteOffset(text string, offset transInt) (int, bool) {
+	if offset < 0 {
+		return 0, false
+	}
+	var units transInt
+	for byteOffset, r := range text {
+		if units == offset {
+			return byteOffset, true
+		}
+		units++
+		if r > 0xffff {
+			units++
+		}
+		if units > offset {
+			return 0, false
+		}
+	}
+	return len(text), units == offset
+}
+
+func (t *tweet) retweetText(text string) string {
+	if t.RetweetedStatus.User == nil {
+		return text
+	}
+	return strings.TrimSpace(fmt.Sprintf("RT @%s %s", t.RetweetedStatus.User.ScreenName, text))
 }
 
 // rawText returns the "raw" text of the tweet, without
@@ -445,8 +517,7 @@ func (t *tweet) rawText() string {
 	// sigh, retweets get truncated if they're tall,
 	// so we have to get the full text from a subfield
 	if t.RetweetedStatus != nil {
-		return strings.TrimSpace(fmt.Sprintf("RT @%s %s",
-			t.RetweetedStatus.User.ScreenName, t.RetweetedStatus.text()))
+		return t.retweetText(t.RetweetedStatus.rawText())
 	}
 	if t.FullText != "" {
 		return t.FullText

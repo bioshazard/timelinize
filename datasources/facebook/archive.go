@@ -115,7 +115,7 @@ func (a Archive) FileImport(ctx context.Context, dirEntry timeline.DirEntry, par
 			return err
 		}
 
-		err = a.processPostsFile(ctx, dirEntry, postsFile, params)
+		err = a.processPostsFile(ctx, dirEntry, postsFilename, postsFile, params)
 		postsFile.Close()
 		if err != nil {
 			return fmt.Errorf("processing %s: %w", postsFilename, err)
@@ -176,13 +176,13 @@ func (a Archive) FileImport(ctx context.Context, dirEntry timeline.DirEntry, par
 	return nil
 }
 
-func (a Archive) processPostsFile(ctx context.Context, d timeline.DirEntry, file fs.File, params timeline.ImportParams) error {
+func (a Archive) processPostsFile(ctx context.Context, d timeline.DirEntry, filename string, file fs.File, params timeline.ImportParams) error {
 	var posts yourPosts
 	if err := json.NewDecoder(file).Decode(&posts); err != nil {
 		return err
 	}
 
-	for _, post := range posts {
+	for postIndex, post := range posts {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
@@ -197,8 +197,10 @@ func (a Archive) processPostsFile(ctx context.Context, d timeline.DirEntry, file
 
 		item := &timeline.Item{
 			Classification: timeline.ClassSocial,
-			Timestamp:      time.Unix(post.Timestamp, 0).UTC(), // these unix timestams are set in UTC
-			Owner:          a.owner,
+			// Array position identifies an occurrence within this immutable export, not a Facebook ID.
+			IntermediateLocation: fmt.Sprintf("%s#/posts/%d", filename, postIndex),
+			Timestamp:            time.Unix(post.Timestamp, 0).UTC(), // these unix timestams are set in UTC
+			Owner:                a.owner,
 			Content: timeline.ItemData{
 				Data: timeline.StringData(postText),
 			},
@@ -226,19 +228,19 @@ func (a Archive) processPostsFile(ctx context.Context, d timeline.DirEntry, file
 		// of various types... I don't really know why they group them together, but we
 		// just store 1 point of data (whether it be a location, a media file, or text
 		// content, for example) per item
-		for _, attachmentGroup := range post.Attachments {
-			for _, attachment := range attachmentGroup.Data {
+		for groupIndex, attachmentGroup := range post.Attachments {
+			for attachmentIndex, attachment := range attachmentGroup.Data {
 				attachedItem := &timeline.Item{
-					Owner:     a.owner,
-					Timestamp: item.Timestamp, // assume main item timestamp, can be changed later
-					Metadata:  make(timeline.Metadata),
+					Owner:                a.owner,
+					IntermediateLocation: fmt.Sprintf("%s/attachments/%d/data/%d", item.IntermediateLocation, groupIndex, attachmentIndex),
+					Timestamp:            item.Timestamp, // assume main item timestamp, can be changed later
+					Metadata:             make(timeline.Metadata),
 				}
 				switch {
 				case attachment.Text != "":
 					text := FixString(attachment.Text)
-					if descStr, ok := attachedItem.Metadata["Description"].(string); ok && text != descStr {
-						attachedItem.Content.Data = timeline.StringData(text)
-					}
+					// A fresh metadata map has no description to compare; retain the supplied text.
+					attachedItem.Content.Data = timeline.StringData(text)
 				case attachment.Media.URI != "":
 					attachedItem.Classification = timeline.ClassSocial
 					attachment.Media.fillItem(attachedItem, d, postText, params.Log)
@@ -336,8 +338,9 @@ func (a Archive) processAlbumFiles(ctx context.Context, tlDirEntry timeline.DirE
 				it.Retrieval.FieldUpdatePolicies = map[string]timeline.FieldUpdatePolicy{
 					"intermediate_location": timeline.UpdatePolicyPreferExisting,
 					"timestamp":             timeline.UpdatePolicyPreferExisting,
-					"location":              timeline.UpdatePolicyPreferIncoming,
-					"owner":                 timeline.UpdatePolicyPreferIncoming,
+					"latlon":                timeline.UpdatePolicyPreferIncoming,
+					"altitude":              timeline.UpdatePolicyPreferIncoming,
+					"attribute_id":          timeline.UpdatePolicyPreferIncoming,
 					"data":                  timeline.UpdatePolicyPreferExisting,
 					"metadata":              timeline.UpdatePolicyPreferIncoming,
 				}

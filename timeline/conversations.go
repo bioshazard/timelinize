@@ -175,6 +175,13 @@ func (tl *Timeline) loadRecentConversations(ctx context.Context, tx *sql.Tx, par
 			tl.classifications[ClassSocial.Name],
 		)
 
+		if len(params.DataSourceName) > 0 {
+			whereClause.WriteString(" AND data_source_name IN (" + strings.TrimSuffix(strings.Repeat("?,", len(params.DataSourceName)), ",") + ")")
+			for _, source := range params.DataSourceName {
+				args = append(args, source)
+			}
+		}
+
 		if len(params.classificationIDs) > 0 {
 			whereClause.WriteString(" AND (")
 			for i, classID := range params.classificationIDs {

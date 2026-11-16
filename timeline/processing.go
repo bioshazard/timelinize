@@ -872,7 +872,7 @@ SELECT * FROM (
 	sb.WriteString(itemDBColumns)
 	sb.WriteString(`
 	FROM extended_items AS items
-	WHERE`)
+	WHERE `)
 
 	if rowID != 0 {
 		// select the row directly with its row ID
@@ -923,23 +923,25 @@ SELECT * FROM (
 		// been either modified OR deleted in our table, since it tracks the content of the item as
 		// it was when it was originally imported from the data source.
 		if checkDeleted {
-			if len(args) > 0 {
-				sb.WriteString("\n\t\tOR ")
-			}
-			sb.WriteString("\n\t\t(deleted IS NOT NULL AND original_id_hash")
-			sb.WriteString(eq(it.idHash))
-			sb.WriteString("?)\n\t\tOR ((modified IS NOT NULL OR deleted IS NOT NULL) AND initial_content_hash")
-			sb.WriteString(eq(it.contentHash))
-			sb.WriteString("?)")
-			args = append(args, it.idHash, it.contentHash)
-
-			// the above criteria are sufficient for one query, the next one that uses
-			// the unique constraints will be its own query that gets unioned together
-			if len(uniqueConstraints) > 0 {
-				sb.WriteString("\n\tUNION ALL\n\t")
-				sb.WriteString("SELECT ")
-				sb.WriteString(itemDBColumns)
-				sb.WriteString("\n\tFROM extended_items AS items\n\tWHERE\n\t\t")
+			// An absent hash conveys no identity. IS NULL would match unrelated
+			// deleted items (most no-ID imports have a NULL original_id_hash).
+			for _, candidate := range []struct {
+				predicate string
+				hash      []byte
+			}{
+				{"deleted IS NOT NULL AND original_id_hash=?", it.idHash},
+				{"(modified IS NOT NULL OR deleted IS NOT NULL) AND initial_content_hash=?", it.contentHash},
+			} {
+				if len(candidate.hash) == 0 {
+					continue
+				}
+				if len(args) > 0 {
+					sb.WriteString("\n\t\tOR ")
+				}
+				sb.WriteString("(")
+				sb.WriteString(candidate.predicate)
+				sb.WriteString(")")
+				args = append(args, candidate.hash)
 			}
 		}
 
@@ -952,6 +954,14 @@ SELECT * FROM (
 				"data_source_name":    true,
 				"data":                true,
 			}
+		}
+
+		// Retrieval/original/hash identities are alternatives to the configured
+		// content constraints, each in its own index-friendly query branch.
+		if len(args) > 0 && len(uniqueConstraints) > 0 {
+			sb.WriteString("\n\tUNION ALL\n\tSELECT ")
+			sb.WriteString(itemDBColumns)
+			sb.WriteString("\n\tFROM extended_items AS items\n\tWHERE\n\t\t")
 		}
 
 		firstIter := true
@@ -1011,7 +1021,7 @@ SELECT * FROM (
 					break
 				}
 				and()
-				sb.WriteString("(data_text")
+				sb.WriteString("(data_text COLLATE BINARY")
 				sb.WriteString(eq(it.dataText))
 				sb.WriteString("? AND data_hash")
 				sb.WriteString(eq(it.dataFileHash))
@@ -1105,6 +1115,10 @@ SELECT * FROM (
 				args = append(args, arg)
 			}
 		}
+		if firstIter && len(uniqueConstraints) > 0 {
+			sb.WriteString("0")
+		}
+
 	}
 
 	sb.WriteString("\n)\nLIMIT 1")

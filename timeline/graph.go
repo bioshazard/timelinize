@@ -402,6 +402,23 @@ func (it *Item) makeContentHash() {
 	it.contentHash = h.Sum(nil)
 }
 
+// scopeContentHash preserves occurrence identity for strict no-ID imports.
+// This is derived provenance, not an ID assigned by the source platform.
+func (it *Item) scopeContentHash(source *string, constraints map[string]bool) {
+	if it.ID != "" || it.IntermediateLocation == "" || !constraints["intermediate_location"] || len(it.contentHash) == 0 {
+		return
+	}
+	h := newHash()
+	h.Write(it.contentHash)
+	h.Write([]byte("\x00occurrence\x00"))
+	if source != nil {
+		h.Write([]byte(*source))
+	}
+	h.Write([]byte{0})
+	h.Write([]byte(it.IntermediateLocation))
+	it.contentHash = h.Sum(nil)
+}
+
 func (it Item) String() string {
 	return fmt.Sprintf("[id=%s class=%+v owner=%+v timestamp=%s timespan=%s orig_path=%s inter_path=%s location=%s filename=%s content=%p meta=%v retkey=%x]",
 		it.ID, it.Classification, it.Owner, it.Timestamp, it.Timespan, it.OriginalLocation,

@@ -66,7 +66,7 @@ func GetMessages(dsName string, dirEntry timeline.DirEntry, params timeline.Impo
 				return err
 			}
 
-			for _, msg := range thread.Messages {
+			for messageIndex, msg := range thread.Messages {
 				senderName := FixString(msg.SenderName)
 				sender := timeline.Entity{
 					Name: senderName,
@@ -89,9 +89,7 @@ func GetMessages(dsName string, dirEntry timeline.DirEntry, params timeline.Impo
 						Owner:          sender,
 					}
 					photo.fillItem(attached, dirEntry, "", params.Log)
-					if attached.Timestamp.IsZero() {
-						attached.Timestamp = msgTimestamp
-					}
+					setMessageMediaTimestamp(attached, msgTimestamp)
 					attachments = append(attachments, attached)
 				}
 				for _, video := range msg.Videos {
@@ -100,9 +98,7 @@ func GetMessages(dsName string, dirEntry timeline.DirEntry, params timeline.Impo
 						Owner:          sender,
 					}
 					video.fillItem(attached, dirEntry, "", params.Log)
-					if attached.Timestamp.IsZero() {
-						attached.Timestamp = msgTimestamp
-					}
+					setMessageMediaTimestamp(attached, msgTimestamp)
 					attachments = append(attachments, attached)
 				}
 				for _, gif := range msg.GIFs {
@@ -111,9 +107,7 @@ func GetMessages(dsName string, dirEntry timeline.DirEntry, params timeline.Impo
 						Owner:          sender,
 					}
 					gif.fillItem(attached, dirEntry, "", params.Log)
-					if attached.Timestamp.IsZero() {
-						attached.Timestamp = msgTimestamp
-					}
+					setMessageMediaTimestamp(attached, msgTimestamp)
 					attachments = append(attachments, attached)
 				}
 				for _, audio := range msg.AudioFiles {
@@ -122,9 +116,7 @@ func GetMessages(dsName string, dirEntry timeline.DirEntry, params timeline.Impo
 						Owner:          sender,
 					}
 					audio.fillItem(attached, dirEntry, "", params.Log)
-					if attached.Timestamp.IsZero() {
-						attached.Timestamp = msgTimestamp
-					}
+					setMessageMediaTimestamp(attached, msgTimestamp)
 					attachments = append(attachments, attached)
 				}
 				if msg.Sticker.URI != "" {
@@ -133,9 +125,7 @@ func GetMessages(dsName string, dirEntry timeline.DirEntry, params timeline.Impo
 						Owner:          sender,
 					}
 					msg.Sticker.fillItem(attached, dirEntry, "", params.Log)
-					if attached.Timestamp.IsZero() {
-						attached.Timestamp = msgTimestamp
-					}
+					setMessageMediaTimestamp(attached, msgTimestamp)
 					attachments = append(attachments, attached)
 				}
 				if msg.Share.Link != "" {
@@ -155,9 +145,10 @@ func GetMessages(dsName string, dirEntry timeline.DirEntry, params timeline.Impo
 				switch {
 				case msgText != "":
 					item = &timeline.Item{
-						Classification: timeline.ClassMessage,
-						Timestamp:      msgTimestamp,
-						Owner:          sender,
+						Classification:       timeline.ClassMessage,
+						IntermediateLocation: fmt.Sprintf("%s#/messages/%d", fpath, messageIndex),
+						Timestamp:            msgTimestamp,
+						Owner:                sender,
 						Content: timeline.ItemData{
 							Data: timeline.StringData(msgText),
 						},
@@ -203,4 +194,16 @@ func GetMessages(dsName string, dirEntry timeline.DirEntry, params timeline.Impo
 	}
 
 	return nil
+}
+
+// setMessageMediaTimestamp projects an attachment at the time it was sent while
+// retaining any separately supplied media creation/capture timestamp.
+func setMessageMediaTimestamp(item *timeline.Item, sent time.Time) {
+	if !item.Timestamp.IsZero() && !item.Timestamp.Equal(sent) {
+		if item.Metadata == nil {
+			item.Metadata = make(timeline.Metadata)
+		}
+		item.Metadata["Media timestamp"] = item.Timestamp
+	}
+	item.Timestamp = sent
 }

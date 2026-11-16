@@ -815,6 +815,11 @@ func (p *processor) storeItem(ctx context.Context, tx *sql.Tx, it *Item) (uint64
 
 	uniqueConstraints := it.Retrieval.finalUniqueConstraints(p.ij.ProcessingOptions.ItemUniqueConstraints)
 
+	// A strict no-ID occurrence is not interchangeable with an identical
+	// repeat elsewhere in the archive. Keep remembered deletion scoped to
+	// the same source occurrence, including after its row data is erased.
+	it.scopeContentHash(dsName, uniqueConstraints)
+
 	// if the item is already in our DB, load it
 	var ir ItemRow
 	ir, err = p.tl.loadItemRow(ctx, tx, 0, 0, it, dsName, uniqueConstraints, true)

@@ -158,8 +158,10 @@ func (m fbArchiveMedia) fillItem(item *timeline.Item, d timeline.DirEntry, postT
 	item.Retrieval.FieldUpdatePolicies = map[string]timeline.FieldUpdatePolicy{
 		"intermediate_location": timeline.UpdatePolicyPreferExisting,
 		"timestamp":             timeline.UpdatePolicyPreferIncoming,
-		"location":              timeline.UpdatePolicyPreferIncoming,
-		"owner":                 timeline.UpdatePolicyPreferIncoming,
+		"latlon":                timeline.UpdatePolicyPreferIncoming,
+		"altitude":              timeline.UpdatePolicyPreferIncoming,
+		"attribute_id":          timeline.UpdatePolicyPreferIncoming,
+		"classification_id":     timeline.UpdatePolicyPreferIncoming,
 		"data":                  timeline.UpdatePolicyPreferExisting,
 		"metadata":              timeline.UpdatePolicyPreferIncoming,
 	}
