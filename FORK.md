@@ -81,7 +81,9 @@ No personal exports, credentials or private fixtures are included here.
 
 Requires Go at least the version in go.mod, a C toolchain and libvips development
 headers. The source release is tested on macOS arm64 with Go1.26.2 and
-libvips8.18.7; Docker uses pinned libvips8.18.4 and needs separate image validation.
+libvips8.18.7. CI/Docker use the exact Go1.26.2 toolchain in `.go-version`;
+the floating `stable` alias selected Go1.27.4 and broke existing dependency/test
+compatibility, so it is no longer used. Docker uses pinned libvips8.18.4 and needs separate image validation.
 
 ```sh
 go test ./...

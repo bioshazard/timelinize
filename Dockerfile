@@ -1,5 +1,6 @@
 # ---- Builder ----
-FROM golang:1.25-trixie AS builder
+ARG GO_VERSION=1.26.2
+FROM golang:${GO_VERSION}-trixie@sha256:4a7137ea573f79c86ae451ff05817ed762ef5597fcf732259e97abeb3108d873 AS builder
 
 RUN sh -c "echo 'deb http://deb.debian.org/debian trixie-backports main contrib non-free non-free-firmware' | tee -a /etc/apt/sources.list.d/backports.list"
 
@@ -51,6 +52,8 @@ WORKDIR /app
 COPY . .
 
 ENV CGO_ENABLED=1
+# Fail if the Docker compiler drifts from the shared tested toolchain pin.
+RUN test "$(go env GOVERSION)" = "go$(cat .go-version)"
 
 # Use Go module and build cache mounts
 RUN --mount=type=cache,target=/go/pkg/mod \
