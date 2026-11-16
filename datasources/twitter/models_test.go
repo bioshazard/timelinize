@@ -121,3 +121,43 @@ func TestTweetTextOverlappingEntities(t *testing.T) {
 		t.Fatalf("overlapping entities changed source: %q", got)
 	}
 }
+
+func TestTweetTextObservedCodePointIndices(t *testing.T) {
+	const text = "🧪 Café https://t.co/a then 😀 https://t.co/b"
+	for _, codePoints := range []bool{false, true} {
+		a := entityFor(text, "https://t.co/a", "https://example.test/a")
+		b := entityFor(text, "https://t.co/b", "https://example.test/b")
+		if codePoints {
+			for _, e := range []*urlEntity{&a, &b} {
+				start := strings.Index(text, e.URL)
+				e.Indices = []transInt{transInt(len([]rune(text[:start]))), transInt(len([]rune(text[:start+len(e.URL)])))}
+			}
+		}
+		tw := tweet{FullText: text, Entities: &twitterEntities{URLs: []urlEntity{a}}, ExtendedEntities: &extendedEntities{Media: []*mediaItem{{URL: b.URL, ExpandedURL: b.ExpandedURL, Indices: b.Indices}}}}
+		if got, want := tw.text(), "🧪 Café https://example.test/a then 😀 https://example.test/b"; got != want {
+			t.Fatalf("codePoints=%v got %q; want %q", codePoints, got, want)
+		}
+	}
+}
+
+func TestRuneByteOffset(t *testing.T) {
+	const text = "é😀z"
+	for _, tc := range []struct {
+		offset transInt
+		pos    int
+		ok     bool
+	}{{-1, 0, false}, {0, 0, true}, {1, 2, true}, {2, 6, true}, {3, 7, true}, {4, 7, false}} {
+		pos, ok := runeByteOffset(text, tc.offset)
+		if ok != tc.ok || ok && pos != tc.pos {
+			t.Errorf("offset %d got (%d,%v)", tc.offset, pos, ok)
+		}
+	}
+}
+
+func TestTweetTextAmbiguousIndexProfilesRefused(t *testing.T) {
+	text := strings.Repeat("😀", 15) + "https://t.co/a https://t.co/a"
+	tw := tweet{FullText: text, Entities: &twitterEntities{URLs: []urlEntity{{URL: "https://t.co/a", ExpandedURL: "https://example.test/a", Indices: []transInt{30, 44}}}}}
+	if got := tw.text(); got != text {
+		t.Fatal("ambiguous index profiles changed an occurrence")
+	}
+}

@@ -104,3 +104,13 @@ verification of a real projection. Production rebuild/rollout and backup/restore
 steps; publishing a source tag does not deploy it. Full Go suite, targeted race tests and native
 macOS arm64 compilation passed; independent spec/standards reviews found no
 blocking findings. Container builds and real projection acceptance remain separate.
+
+## Observed Twitter archive index profiles
+
+Some observed archive entities use Unicode code-point indices rather than UTF-16
+units. The importer accepts a UTF-16 span first, then a code-point span only when
+it exactly equals the declared source URL token. Invalid/stale spans and
+conflicting/overlapping replacements remain refused. This is an observed archive
+compatibility profile, not a universal claim about the Twitter API. Synthetic
+fixtures cover both profiles, supplementary emoji, combining accents, URL and
+media entities. No private export fixture is published; IDs/times are unchanged.

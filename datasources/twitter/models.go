@@ -425,9 +425,20 @@ func (t *tweet) text() string {
 		}
 		start, startOK := utf16ByteOffset(txt, indices[0])
 		end, endOK := utf16ByteOffset(txt, indices[1])
-		// Refuse malformed/stale ranges rather than replacing unrelated text.
-		if !startOK || !endOK || start >= end || txt[start:end] != shortURL {
+		runeStart, runeStartOK := runeByteOffset(txt, indices[0])
+		runeEnd, runeEndOK := runeByteOffset(txt, indices[1])
+		validUTF16 := startOK && endOK && start < end && txt[start:end] == shortURL
+		validRunes := runeStartOK && runeEndOK && runeStart < runeEnd && txt[runeStart:runeEnd] == shortURL
+		// Observed archives use both index profiles. A declared exact URL span
+		// guards either interpretation; differing valid spans are ambiguous.
+		if validUTF16 && validRunes && (start != runeStart || end != runeEnd) {
 			return
+		}
+		if !validUTF16 {
+			if !validRunes {
+				return
+			}
+			start, end = runeStart, runeEnd
 		}
 		replacements = append(replacements, replacement{start, end, expandedURL})
 	}
@@ -445,7 +456,7 @@ func (t *tweet) text() string {
 		}
 	}
 
-	// Offsets are UTF-16 code units in the original escaped text. Replace
+	// Offsets are validated against the original escaped text. Replace
 	// right-to-left so expansion cannot shift another entity's source span.
 	sort.Slice(replacements, func(i, j int) bool {
 		if replacements[i].start == replacements[j].start {
@@ -501,6 +512,22 @@ func utf16ByteOffset(text string, offset transInt) (int, bool) {
 		}
 	}
 	return len(text), units == offset
+}
+
+// runeByteOffset handles observed archive code-point indices with the same
+// boundary and range checks as the UTF-16 interpretation.
+func runeByteOffset(text string, offset transInt) (int, bool) {
+	if offset < 0 {
+		return 0, false
+	}
+	var count transInt
+	for pos := range text {
+		if count == offset {
+			return pos, true
+		}
+		count++
+	}
+	return len(text), count == offset
 }
 
 func (t *tweet) retweetText(text string) string {
