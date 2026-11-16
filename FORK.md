@@ -70,9 +70,11 @@ context can win. Missing senders, timezone/DST ambiguity, unsupported Facebook
 categories and absent source fields remain unresolved. Successful import is not
 a fidelity proof. No fake source IDs, timestamps or senders are introduced.
 
-The legacy Facebook HTML conversion adapter and private reconciliation receipts
-remain in biosnet, separate from this application fork:
-[converter snapshot](https://gitlab.com/bios-dev/incubator/biosnet/-/tree/f02280f/tools/facebook-export-conversion).
+The legacy Facebook HTML converter lives in the separate
+[facebook-archive-converter repository](https://github.com/bioshazard/facebook-archive-converter).
+This application consumes its explicit Timelinize JSON compatibility output; it
+contains no legacy HTML parser. Private operator reconciliation receipts remain
+outside public source repositories.
 No personal exports, credentials or private fixtures are included here.
 
 ## Validation
@@ -89,8 +91,14 @@ go build -o /tmp/timelinize-bios .
 
 Synthetic tests cover exact occurrences, binary identity, tombstones, scoped
 content hashes, multipart policy boundaries, conversation filtering and Unicode
-URL expansion. They do not replace full source-ledger verification of a real
-projection. Production rebuild/rollout and backup/restore acceptance are separate
+URL expansion. Native job integration fixtures also exercise the registered
+Facebook importer through processing and SQLite: exact repeated/case-sensitive
+text across threads, media-only messages, stored text/media bytes, attachment and
+recipient edges, media sender/classification/time, owner/source-account merge,
+scalar metadata into a nil-metadata owner, idempotent replay, remembered deletion
+isolation, new identical/unrelated occurrences after deletion, and repository
+reopen/integrity. These are small synthetic fixtures, not full source-ledger
+verification of a real projection. Production rebuild/rollout and backup/restore acceptance are separate
 steps; publishing a source tag does not deploy it. Full Go suite, targeted race tests and native
 macOS arm64 compilation passed; independent spec/standards reviews found no
 blocking findings. Container builds and real projection acceptance remain separate.
