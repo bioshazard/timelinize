@@ -29,7 +29,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends -t trixie-backp
     ca-certificates
 RUN rm -rf /var/lib/apt/lists/*
 
-# Build latest libvips from source with caching
+# Build the shared pinned libvips version from source.
+COPY .libvips-version /tmp/.libvips-version
 # wrap-mode=forcefallback forces meson to build glib (and its other deps) from
 # vendored subprojects instead of the apt-installed -dev packages above; that
 # path hits a meson bug (get_variable() on an overridden internal dependency
@@ -37,7 +38,7 @@ RUN rm -rf /var/lib/apt/lists/*
 # apt packages already satisfy every dependency via pkg-config, so drop the
 # flag and let meson use them.
 RUN --mount=type=cache,target=/tmp/libvips-cache \
-    git clone --depth 1 --branch v8.18.4 https://github.com/libvips/libvips.git /tmp/libvips && \
+    git clone --depth 1 --branch "v$(cat /tmp/.libvips-version)" https://github.com/libvips/libvips.git /tmp/libvips && \
     cd /tmp/libvips && \
     meson setup build --buildtype=release --backend=ninja -Dprefix=/usr -Dlibdir=/usr/lib && \
     ninja -C build && \
@@ -55,6 +56,7 @@ ENV CGO_ENABLED=1
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     go mod download && \
+    go test ./... && \
     go build -o /app/timelinize
 
 # ---- Runtime ----

@@ -3,14 +3,14 @@ description: 'Build and cache libvips from source (useful because Ubuntu package
 runs:
   using: 'composite'
   steps:
-    - name: Get latest libvips version
+    - name: Read pinned libvips version
       id: libvips-version
       shell: bash
-      # sometimes this step spuriously fails; just kick it (restart the job) and it should work again
       run: |
-        LATEST_VERSION=$(curl -s https://api.github.com/repos/libvips/libvips/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
-        echo "version=$LATEST_VERSION" >> $GITHUB_OUTPUT
-        echo "Latest libvips version: $LATEST_VERSION"
+        VERSION=$(cat .libvips-version)
+        [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "Pinned libvips version: $VERSION"
 
     - name: Cache libvips
       id: cache-libvips

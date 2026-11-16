@@ -48,6 +48,11 @@ workflow and unrelated importer changes. Their licenses permit reuse, but their
 behavior needs its own acceptance fixtures. These forks remain valuable sources
 for later narrowly reviewed improvements.
 
+Additional build fix: [Samuel Moede fork / Claude](https://github.com/samuelmoede/timelinize/commit/5584cb4810f84d0f5c63f05657b253a94847e111),
+`5584cb4810f84d0f5c63f05657b253a94847e111`, removes forced Meson fallback dependency
+builds. Docker and Linux CI share `.libvips-version`; Docker builds run the Go
+suite before producing a binary. Multi-platform publishing configures QEMU.
+
 ## Import contract and limits
 
 Use an immutable, deterministically ordered archive. Configure at least
@@ -73,7 +78,7 @@ No personal exports, credentials or private fixtures are included here.
 ## Validation
 
 Requires Go at least the version in go.mod, a C toolchain and libvips development
-headers. The first source release is tested on macOS arm64 with Go1.26.2 and
+headers. The source release is tested on macOS arm64 with Go1.26.2 and
 libvips8.18.7; Docker uses pinned libvips8.18.4 and needs separate image validation.
 
 ```sh
@@ -86,4 +91,6 @@ Synthetic tests cover exact occurrences, binary identity, tombstones, scoped
 content hashes, multipart policy boundaries, conversation filtering and Unicode
 URL expansion. They do not replace full source-ledger verification of a real
 projection. Production rebuild/rollout and backup/restore acceptance are separate
-steps; publishing a source tag does not deploy it.
+steps; publishing a source tag does not deploy it. Full Go suite, targeted race tests and native
+macOS arm64 compilation passed; independent spec/standards reviews found no
+blocking findings. Container builds and real projection acceptance remain separate.
