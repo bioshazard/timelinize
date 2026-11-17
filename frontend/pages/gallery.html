@@ -5,7 +5,7 @@
 <div class="page-body">
 	<div class="container-xl">
 		<div class="row">
-			<div id="filter-column" class="col-sm-4 col-lg-3">
+			<div id="filter-column" class="col-12 col-md-4 col-lg-3">
 				<div class="page-pretitle">
 					Explore
 				</div>
@@ -23,7 +23,9 @@
 				</h2>
 
 
-				<form class="filter">
+				<details class="responsive-filters" open>
+					<summary>Filters</summary>
+					<form class="filter">
 					
 					<!-- Date picker goes here -->
 
@@ -67,9 +69,10 @@
 						
 					</div>
 				</form>
+				</details>
 			</div>
 
-			<div id="content-column" class="col-sm-8 col-lg-9">
+			<div id="content-column" class="col-12 col-md-8 col-lg-9">
 				<div class="filter-results" class="my-4">
 
 				</div>

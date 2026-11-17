@@ -86,3 +86,10 @@
 #modal-preview-nav .btn.btn-next svg {
 	margin-right: calc(var(--tblr-btn-padding-x) * -.25);
 }
+@media (max-width: 767.98px) {
+	#filter-column { max-width: none; }
+	.filter-results { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+	.filter-results > .card { min-width: 0; }
+	.card-link:hover { transform: none; }
+	#modal-preview-content { max-height: 70dvh; }
+}

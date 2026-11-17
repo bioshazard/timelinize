@@ -143,6 +143,10 @@ async function navigateSPA(addrBarDestination, scrollToTop) {
 
 			// replace page content
 			$('#page-content').innerHTML = data;
+			initResponsiveFilters();
+			if (window.matchMedia('(max-width: 767.98px)').matches) {
+				bootstrap.Collapse.getInstance($('#navbar-menu'))?.hide();
+			}
 
 			// adjust page title
 			const newTitleEl = $('body title');
@@ -328,3 +332,13 @@ async function initialize() {
 }
 
 initialize();
+
+// Collapsed by default on phones; preserve the user's choice while filtering.
+// Reinitialize only for a new page, and reopen when crossing to desktop.
+function initResponsiveFilters() {
+	const mobile = window.matchMedia('(max-width: 767.98px)').matches;
+	for (const panel of document.querySelectorAll('.responsive-filters')) {
+		panel.open = !mobile;
+	}
+}
+window.matchMedia('(max-width: 767.98px)').addEventListener('change', initResponsiveFilters);

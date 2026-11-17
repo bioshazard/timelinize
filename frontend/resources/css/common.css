@@ -1072,3 +1072,34 @@ This way, we only add space below a heading if a description is present.
 .alert-description {
 	margin-top: .25rem;
 }
+/* Native disclosure keeps filters available without burying results on phones. */
+.responsive-filters > summary {
+	font-weight: 600;
+	cursor: pointer;
+	padding: .75rem 0;
+}
+@media (min-width: 768px) {
+	.responsive-filters > summary { display: none; }
+}
+@media (max-width: 767.98px) {
+	.application-bar .container-xl { gap: .25rem; }
+	header .logo { width: 110px; }
+	.application-bar .nav-item { margin-right: 0 !important; }
+	.application-bar .nav-item.ms-4 { margin-left: .25rem !important; }
+	#page-content .container-xl > .row { --tblr-gutter-x: 1rem; }
+	.application-bar .navbar-toggler,
+	.application-bar .nav-link,
+	.pagination .page-link,
+	.btn { min-height: 44px; }
+	.application-bar .nav-link { min-width: 36px; justify-content: center; }
+	.form-control, .form-select, .ts-control input { font-size: 16px; }
+	.responsive-filters { margin-bottom: .75rem; }
+	.responsive-filters > summary {
+		border-bottom: 1px solid var(--tblr-border-color);
+		min-height: 44px;
+	}
+	.responsive-filters[open] > summary { margin-bottom: .75rem; }
+	#page-content .row > * { min-width: 0; }
+	.message-content, .chat-bubble, .chat-bubble-body { overflow-wrap: anywhere; min-width: 0; }
+	.message-content :is(img, video, canvas, .thumbhash-container) { max-width: 100%; }
+}

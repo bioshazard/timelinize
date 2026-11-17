@@ -5,7 +5,9 @@
 
 <div class="navbar translucent sticky-top">
 	<div class="container-xl">
-		<div class="filter d-flex align-items-center gap-3">
+		<details class="responsive-filters item-source-filters" open>
+			<summary>Sources &amp; types</summary>
+			<div class="filter d-flex align-items-center gap-3">
 
 			<select multiple class="tl-data-source form-select" placeholder="Data sources" autocomplete="off">
 
@@ -21,6 +23,8 @@
 			</label>
 
 		</div>
+
+		</details>
 
 		<div class="pagination-container ms-auto">
 			
@@ -44,7 +48,7 @@
 					<div class="input-group">
 						<div class="input-group input-group-flat">
 							<input id="filter-limit" type="text"
-								class="filter-input form-control text-end pe-1" value="50" size="1"
+								class="filter-input form-control text-end pe-1" aria-label="Items per page" inputmode="numeric" value="50" size="1"
 								autocomplete="off">
 							<span class="input-group-text">
 								items/page
@@ -70,7 +74,9 @@
 		<div class="row">
 			<div class="col-md-3">
 				
-				<form class="filter">
+				<details class="responsive-filters" open>
+					<summary>Date &amp; people</summary>
+					<form class="filter">
 					
 					<div class="tl-date-picker">
 
@@ -83,6 +89,7 @@
 					</div>
 
 				</form>
+				</details>
 
 			</div>
 			<div class="col-md-9">
@@ -125,7 +132,7 @@
 			</div>
 		</div>
 
-		<div class="flex-grow-1">
+		<div class="flex-grow-1 item-card-main">
 			<div class="card-body">
 				<div class="item-entities d-flex align-items-center mb-3">
 					<a class="entity owner-entity d-flex align-items-center gap-2">
@@ -155,7 +162,7 @@
 				</div>
 
 				<div class="d-flex justify-content-between">
-					<div class="list-inline mb-0 text-secondary d-sm-block d-none">
+					<div class="list-inline mb-0 text-secondary">
 						<div class="list-inline-item">
 							<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-event" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
 								<path stroke="none" d="M0 0h24v24H0z" fill="none"></path>

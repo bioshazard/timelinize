@@ -110,3 +110,26 @@ body {
 .footer {
 	padding: 1rem 0;
 }
+@media (max-width: 767.98px) {
+	.row.g-4 { flex-direction: column; flex-wrap: nowrap; }
+	.filter-column {
+		height: auto;
+		max-height: none;
+		overflow: visible;
+		flex: 0 0 auto;
+		padding-top: .75rem;
+	}
+	.filter-column #showing-info { margin-bottom: .25rem !important; }
+	.filter-column .responsive-filters > form { max-height: 45dvh; overflow-y: auto; padding: 0 .25rem; }
+	.content-column {
+		flex: 1 1 0;
+		min-height: 0;
+		max-height: none;
+		padding-top: .5rem;
+		padding-bottom: 1rem;
+	}
+	#convo-container > .card-body { padding: .75rem; }
+	.chat-item .row { --tblr-gutter-x: .5rem; }
+	.message-content :is(.thumbhash-container, video) { max-width: 100%; }
+	#convos-container a.card-stacked:hover { transform: none; }
+}
