@@ -114,3 +114,18 @@ conflicting/overlapping replacements remain refused. This is an observed archive
 compatibility profile, not a universal claim about the Twitter API. Synthetic
 fixtures cover both profiles, supplementary emoji, combining accents, URL and
 media entities. No private export fixture is published; IDs/times are unchanged.
+
+
+## v0.0.30-bios.beta.1 — mobile browsing beta
+
+Frontend completion release; backend/import/database formats are unchanged from
+v0.0.29-bios.4. Profile navigation, filters/URL restoration/paging, conversation
+state, request failure recovery and mobile layouts are repaired. Content-derived
+asset fingerprints prevent mixed cached JavaScript/HTML after upgrades. Owner
+merge entrypoints retain the timeline owner. [Evidence](docs/beta-readiness.md).
+
+The first deployment image targets Linux amd64 (Talos). It rebuilds the binary
+with the updated embedded frontend, using the exact previous runtime's native
+headers/libraries. `tools/verify-frontend-release.py` refuses runtime reuse after
+backend/dependency changes; those require the normal Dockerfile/full builds.
+No new app features or export-category completeness claims. AI-assisted changes.

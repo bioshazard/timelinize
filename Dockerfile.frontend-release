@@ -1,0 +1,15 @@
+# Frontend-only release: verified unchanged backend + the exact deployed runtime ABI.
+# The workflow's source guard must pass before this Dockerfile is used.
+FROM ghcr.io/bioshazard/timelinize:v0.0.29-bios.4@sha256:d466abc82bbbac6c82163ee935a6bcfb5f42031e376f645b0e97e6db036b7862 AS runtime
+FROM golang:1.26.2-trixie@sha256:4a7137ea573f79c86ae451ff05817ed762ef5597fcf732259e97abeb3108d873 AS builder
+COPY --from=runtime /usr/lib/ /usr/lib/
+COPY --from=runtime /usr/include/ /usr/include/
+RUN ldconfig
+WORKDIR /src
+COPY . .
+ENV CGO_ENABLED=1
+RUN test "$(go env GOVERSION)" = "go$(cat .go-version)"
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    go test ./... && go build -o /tmp/timelinize .
+FROM runtime
+COPY --from=builder /tmp/timelinize /app/timelinize
