@@ -6,6 +6,11 @@ tlz.pageControllers = {
 		},
 		async render() {
 			await renderConversationsPage();
+		},
+		unload() {
+			conversationVersion++;
+			messages = [];
+			_rendering = false;
 		}
 	},
 

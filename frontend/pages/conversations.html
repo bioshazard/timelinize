@@ -6,14 +6,11 @@
 	<div class="container-xl">
 		<div class="row g-4">
 			<div class="col-12 col-md-3 filter-column">
-				<details class="responsive-filters" open>
-					<summary>Filters</summary>
-					<form class="filter">
-					<div class="page-pretitle">
+				<div class="page-pretitle">
 						Explore
 					</div>
 					<h2 class="page-title">
-						<a id="conversations-reset">
+						<button id="conversations-reset" type="button" class="btn btn-link p-0 text-reset">
 							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
 								fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
 								stroke-linejoin="round"
@@ -23,12 +20,19 @@
 								<path d="M14 15v2a1 1 0 0 1 -1 1h-7l-3 3v-10a1 1 0 0 1 1 -1h2" />
 							</svg>
 							Conversations
-						</a>
+						</button>
 					</h2>
+					<div id="conversation-heading" class="d-none mt-2">
+						<button id="conversation-back" type="button" class="btn btn-outline-secondary">← All conversations</button>
+						<div id="conversation-participants" class="fw-semibold mt-2"></div>
+					</div>
 					<div id="showing-info" class="text-secondary mt-1 mb-4">Showing <span id="convos-count"></span> most
 						recent (<span id="convos-duration"></span>)</div>
 
 
+					<details class="responsive-filters" open>
+					<summary>Filters</summary>
+					<form class="filter">
 					<label class="form-label">People involved</label>
 					<div class="mb-4">
 						<select class="entity-input form-select" placeholder="Name or contact info">

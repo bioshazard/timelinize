@@ -46,7 +46,7 @@ async function itemPageMain() {
 			itemContentEl.classList.add('item-content-text');
 			const size = item.size || item.data_text?.length;
 			const fontSize = Math.min(3500 * (1/size) + 20, 100);
-			itemContentEl.style.fontSize = `${fontSize}px`;
+			itemContentEl.style.setProperty('--item-text-size', `${fontSize}px`);
 
 			const card = document.createElement('div');
 			card.classList.add('card');

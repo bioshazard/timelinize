@@ -10,7 +10,7 @@ configuration, data, importer, image or deployment changes.
   filters open automatically. Query changes retain the disclosure state.
 - Conversations keep a bounded scroll pane; opening filters does not replace the
   message scroller. Long text and media stay inside the available width.
-- Items retain timestamps on phones, reduce card side rails, and keep the View
+- Items retain timestamps on phones, remove decorative card side rails, and keep the View
   action visible with a44px touch target. Toolbar filters collapse separately from
   dates/people. Numeric page-size input has an accessible name/input mode.
 - Mobile navigation collapses after choosing a destination. Header spacing and
@@ -18,6 +18,12 @@ configuration, data, importer, image or deployment changes.
 - Gallery sidebar is collapsible, cards can shrink to phone width, preview content
   height is bounded, and desktop hover enlargement is disabled on phones.
 - Dashboard heading no longer occupies a fixed two-column slot on phones.
+- Compact conversation cards and a two-column phone gallery reduce wasted space.
+  Preview navigation/close controls wrap; detail text stays within18–24px.
+- Conversation back navigation remains visible with filters closed. Reopening a
+  thread clears prior paging state; stale requests and broken media cannot hold it.
+- Items request one pagination sentinel, render exactly the selected page size,
+  and show actual result ranges. Phone calendars use a centered modal.
 
 ## Local verification
 
@@ -33,11 +39,12 @@ checks pass.
 Checks use browser DOM/layout and interactions, not merely static HTML. Screenshot
 capture timed out; fallback browser access was unavailable. Native iOS/Android,
 virtual-keyboard behavior and image/video-heavy conversation layouts still need
-hands-on review. Gallery card behavior was inspected structurally; the local
-fixture has no media payloads. This is a bounded layout improvement, not a full
+hands-on review. A second390px pass exercised12 synthetic PNG gallery cards,
+preview Next/close, thread back/reopen, the phone calendar and50-row pagination.
+Four Node regression tests cover thread reset, failed-media completion and pagination. This is a bounded layout improvement, not a full
 mobile redesign or cross-browser certification.
 
-Local operator demo: http://localhost:13802 (Mac loopback only), container
+Local operator demo: http://192.168.1.126:13802 (LAN), container
 `timelinize-mobile-demo`, isolated anonymous volumes and synthetic inputs only.
 Its frontend is copied from this checkout; refresh after copying updated assets:
 

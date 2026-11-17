@@ -4,6 +4,7 @@ var messages = [];
 // avoids a logical race condition so that only one new message chunk is loaded at
 // a time (like while scrolling quickly)
 var _rendering = false;
+var conversationVersion = 0;
 
 // if true, the next scroll event on the content column will not fire event handlers
 var _preventScrollEvent = true;
@@ -14,7 +15,7 @@ var _veryEnd = true, _veryBeginning = false;
 
 async function conversationsPageMain() {
 	$('.tl-date-picker').append(newDatePicker({
-		passThru: {
+		passthru: {
 			range: true
 		},
 		rangeToggle: true,
@@ -142,6 +143,10 @@ async function renderConversationsPage() {
 
 
 async function renderConversations() {
+	conversationVersion++;
+	messages = [];
+	_rendering = false;
+	$('#conversation-heading').classList.add('d-none');
 	$('#convos-container').classList.remove('d-none');
 	$('#convo-container').classList.add('d-none');
 	$('#showing-info').classList.remove('d-none');
@@ -234,31 +239,52 @@ async function renderConversations() {
 
 
 async function renderSingleConversation() {
+	const version = ++conversationVersion;
+	messages = [];
+	_veryBeginning = false;
+	_veryEnd = false;
+	_preventScrollEvent = true;
+	$('#conversation-heading').classList.remove('d-none');
+	const people = $('.entity-input').tomselect;
+	$('#conversation-participants').textContent = people.items.map(id => {
+		const entity = people.options[id];
+		return entity?.name || entity?.attributes?.[0]?.value || 'Unknown person';
+	}).join(', ');
 	$('#convos-container').classList.add('d-none');
 	$('#showing-info').classList.add('d-none');
 	$('.page-title').classList.add('mb-4');
 	$('#convo-container .chat-bubbles').replaceChildren();
 
-	await renderConversationChunk();
+	await renderConversationChunk(undefined, version);
+	if (version !== conversationVersion) return;
 
 	$('#convo-container').classList.remove('d-none');
 
 	// scroll to bottom, but don't allow it to trigger loading more
 	await forMediaToRender();
+	if (version !== conversationVersion) return;
 	_preventScrollEvent = true;
 	$('.content-column').scrollTop = $('.content-column').scrollHeight;
 }
 
 async function forMediaToRender() {
-	await Promise.all([...$$('.chat-item img.content, .chat-item video.content')].map(async (elem) => {
-		while (!elem.offsetHeight) {
-			await new Promise(requestAnimationFrame);
-		}
+	// Broken or slow attachments must not block the whole conversation forever.
+	await Promise.all([...$$('.chat-item img.content, .chat-item video.content')].map(elem => {
+		if ((elem.tagName === 'IMG' && elem.complete) || elem.readyState >= 1 || elem.error) return;
+		return new Promise(resolve => {
+			const done = () => {
+				clearTimeout(timer);
+				for (const event of ['load', 'loadedmetadata', 'error']) elem.removeEventListener(event, done);
+				resolve();
+			};
+			const timer = setTimeout(done, 1500);
+			for (const event of ['load', 'loadedmetadata', 'error']) elem.addEventListener(event, done, { once: true });
+		});
 	}));
 }
 
-async function renderConversationChunk(direction) {
-	if (_rendering) return;
+async function renderConversationChunk(direction, version = conversationVersion) {
+	if (_rendering && direction) return;
 
 	_rendering = true;
 
@@ -291,6 +317,7 @@ async function renderConversationChunk(direction) {
 		}
 		console.log("PARAMS:", params)
 		const results = await app.LoadConversation(params);
+		if (version !== conversationVersion) return;
 		console.log("RESULTS:", results)
 		
 		
@@ -375,6 +402,7 @@ async function renderConversationChunk(direction) {
 			// I did find that we have to wait for the media elements to load so we can get
 			// an accurate reading of their effect on our target element's offsetTop
 			await forMediaToRender();
+			if (version !== conversationVersion) return;
 
 			// finally, restore scroll position by setting it to its new offsetTop: this should look
 			// the same to the user, and if it happens fast enough, they won't even see any thrashing
@@ -392,7 +420,7 @@ async function renderConversationChunk(direction) {
 	} /*catch(err) {
 		console.error("caught:", err);
 	}*/ finally {
-		_rendering = false;
+		if (version === conversationVersion) _rendering = false;
 	}
 }
 
@@ -421,7 +449,8 @@ on('change', '.filter', e => {
 
 // avoid resetting entire page state, all we need to do is go back to the list of
 // convos, but keep the rest of the filter params
-on('click', '#conversations-reset', event => {
+on('click', '#conversations-reset, #conversation-back', event => {
+	event.preventDefault();
 	const ts = $('.entity-input').tomselect;
 	ts.clear();
 	ts.clearOptions();

@@ -13,6 +13,8 @@
 }
 
 .item-content-text {
+	font-size: var(--item-text-size, 20px);
+	overflow-wrap: anywhere;
 	font-family: Lora;
 	padding: 15px 25px;
 }
@@ -97,4 +99,13 @@
 	align-items: center;
 	justify-content: center;
 	text-align: center;
+}
+@media (max-width: 767.98px) {
+	.item-content-text { font-size: clamp(18px, var(--item-text-size, 20px), 24px); line-height: 1.55; padding: 1rem; }
+	#item-metadata, .datagrid-content { overflow-wrap: anywhere; min-width: 0; }
+	.motionpic-controls { opacity: 1; width: 44px; height: 44px; top: 8px; right: 8px; }
+}
+
+@media (max-width: 767.98px) {
+	.page-header .btn.disabled { display: none; }
 }

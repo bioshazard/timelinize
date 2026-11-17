@@ -626,7 +626,8 @@ function newDatePicker(opts) {
 	// set up the AirDatepicker options
 	const dpOpts = {
 		...opts.passthru,
-		container: opts?.passthru?.container || tpl, // this is necessary if the <body> tag is fixed (doesn't scroll), so we choose a container that will scroll with the input element
+		isMobile: window.matchMedia('(max-width: 767.98px)').matches,
+		container: window.matchMedia('(max-width: 767.98px)').matches ? undefined : (opts?.passthru?.container || tpl), // this is necessary if the <body> tag is fixed (doesn't scroll), so we choose a container that will scroll with the input element
 		locale: {
 			days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
 			daysShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],

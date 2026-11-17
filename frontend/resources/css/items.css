@@ -106,3 +106,12 @@
 	.entity-name, .entity-attribute { overflow-wrap: anywhere; }
 	.item-content { font-size: 16px; }
 }
+
+/* Reading takes priority over internal row IDs and decorative rails on phones. */
+@media (max-width: 767.98px) {
+	.filter-results > .card.flex-row { grid-template-columns: minmax(0, 1fr); }
+	.item-card-left { display: none; }
+	.item-card-right { grid-column: 1; }
+	.item-card-main .item-entities { margin-bottom: .5rem !important; }
+	.item-card-main .item-content { margin-bottom: .5rem !important; }
+}

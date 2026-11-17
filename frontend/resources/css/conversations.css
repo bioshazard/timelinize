@@ -133,3 +133,15 @@ body {
 	.message-content :is(.thumbhash-container, video) { max-width: 100%; }
 	#convos-container a.card-stacked:hover { transform: none; }
 }
+
+.page-title #conversations-reset { font: inherit; text-decoration: none; text-align: left; }
+@media (max-width: 767.98px) {
+	.filter-column .page-title.mb-4 { margin-bottom: .5rem !important; }
+}
+
+@media (max-width: 767.98px) {
+	.convo-card .card-body, .convo-card .card-footer { padding: .75rem; }
+	.convo-card .card-title { font-size: 1rem; margin-bottom: .5rem; overflow-wrap: anywhere; }
+	.convo-preview { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+	.convo-datetime { font-size: .75rem; }
+}

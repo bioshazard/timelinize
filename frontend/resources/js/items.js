@@ -1,5 +1,6 @@
 function limit() {
-	return Number($('#filter-limit').value);
+	const value = Number($('#filter-limit').value);
+	return Number.isFinite(value) && value >= 1 ? Math.min(Math.floor(value), 200) : 50;
 }
 
 function itemsPageFilterParams() {
@@ -42,9 +43,6 @@ function itemsPageFilterParams() {
 	// 		params.offset = params.limit * (offset-1);
 	// 	}
 	// }
-
-	// add 1 to the limit so we can know whether there is a next page
-	params.limit++;
 
 	console.log("FILTER PARAMETERS:", params);
 
@@ -99,7 +97,7 @@ async function itemsMain() {
 	$$('.filter-results').forEach(elem => elem.replaceChildren());
 
 	const offset = params.offset || 0;
-	const pageSize = params.limit-1; // remember we set it to 1 more to determine next page
+	const pageSize = limit(); // remember we set it to 1 more to determine next page
 	// $('.page-offset-start').innerText = offset + 1;
 	// $('.page-offset-end').innerText = offset + pageSize;
 	// $('.page-total-count').innerText = results.total;
@@ -107,10 +105,11 @@ async function itemsMain() {
 
 	const maxPageLinksAtBeginning = 3;
 
-	// remove the extra item from the list that we only used to know whether there's another page
-	if (results.items?.length > pageSize) {
-		results.items.pop();
-	}
+	// The extra row only tells us whether Next should be enabled.
+	results.items = (results.items || []).slice(0, pageSize);
+	$('#items-results-info').textContent = results.items.length
+		? `Showing results ${offset + 1}–${offset + results.items.length}`
+		: 'No items match these filters';
 
 	const classes = load('item_classes');
 	function classInfo(name) {

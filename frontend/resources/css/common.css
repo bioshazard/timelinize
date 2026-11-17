@@ -1103,3 +1103,15 @@ This way, we only add space below a heading if a description is present.
 	.message-content, .chat-bubble, .chat-bubble-body { overflow-wrap: anywhere; min-width: 0; }
 	.message-content :is(img, video, canvas, .thumbhash-container) { max-width: 100%; }
 }
+
+@media (max-width: 767.98px) {
+	.air-datepicker.-is-mobile- { max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; }
+	.air-datepicker-button, .air-datepicker-cell { min-height: 36px; }
+	#conversation-participants { overflow-wrap: anywhere; }
+}
+
+@media (max-width: 767.98px) {
+	.page-header { margin-top: .75rem; }
+	.page-title { overflow-wrap: anywhere; }
+	.page-body { margin-top: .75rem; }
+}
