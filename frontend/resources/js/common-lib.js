@@ -2540,9 +2540,21 @@ function filterToQueryString() {
 		for (const elem of checkedItemClasses) {
 			itemClasses.push(elem.value);
 		}
-		qs.set('class', itemClasses);
+		if (!itemClasses.length) {
+			qs.set('types', 'none');
+			qs.delete('class');
+		} else {
+			qs.set('class', itemClasses);
+			qs.delete('types');
+		}
 	} else {
 		qs.delete('class');
+		qs.delete('types');
+	}
+
+	if ($('#filter-limit')) {
+		const size = boundedPageSize($('#filter-limit').value);
+		if (size === 50) qs.delete('limit'); else qs.set('limit', size);
 	}
 
 	if ($('#format-images')) {
@@ -2585,6 +2597,9 @@ function filterToQueryString() {
 
 async function queryStringToFilter() {
 	const qs = new URLSearchParams(window.location.search);
+	const view = $('#page-content')?.firstElementChild;
+	const stillCurrent = () => !view || view.isConnected;
+	if ($('#filter-limit')) $('#filter-limit').value = boundedPageSize(qs.get('limit'));
 
 	// display page numbers
 	$$('.page-number').forEach((el) => el.innerText = `Page ${currentPageNum()}`);
@@ -2610,10 +2625,12 @@ async function queryStringToFilter() {
 
 	// entity
 	if ($('.entity-input') && qs.get("entity")) {
+		const entityInput = $('.entity-input');
+		const control = entityInput.tomselect;
 		const ids = qs.get('entity').split(',').map(Number).filter(id => Number.isSafeInteger(id) && id > 0);
 		if (ids.length) {
 			const entities = await app.SearchEntities({repo: tlz.openRepos[0].instance_id, row_id: ids});
-			const control = $('.entity-input')?.tomselect;
+			if (!stillCurrent() || !entityInput.isConnected || entityInput.tomselect !== control) return;
 			for (const entity of entities || []) {
 				control?.addOption(entity);
 				control?.addItem(entity.id, true);
@@ -2641,7 +2658,9 @@ async function queryStringToFilter() {
 
 	// classes (item types)
 	const itemClasses = qs.get("class");
-	if (itemClasses === null) {
+	if (qs.get('types') === 'none') {
+		for (const input of $$('.tl-item-class-dropdown input[type=checkbox]')) input.checked = false;
+	} else if (itemClasses === null) {
 		// check all by default
 		for (var elem of $$('.tl-item-class-dropdown input[type=checkbox]')) {
 			elem.checked = true;
@@ -2901,6 +2920,11 @@ function drawHEIF(heicImage, canvasEl) {
 			ctx.putImageData(displayImageData, 0, 0);
 		}
 	}.bind(this));
+}
+
+function boundedPageSize(value) {
+	const size = Number(value);
+	return Number.isFinite(size) && size >= 1 ? Math.min(Math.floor(size), 200) : 50;
 }
 
 function escapeHTML(value) {

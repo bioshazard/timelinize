@@ -35,3 +35,49 @@ available. Real iOS/Android keyboard behavior remains a separate qualification.
 Local LAN candidate first. No tag, production rollout or beta-completeness claim
 until interaction, mobile/desktop, error and source-fidelity checks are recorded.
 Known unsupported export categories remain qualified in FORK.md and import docs.
+
+## Candidate evidence
+
+All changes remain on `mobile-ux`; the LAN demo serves this checkout at
+http://192.168.1.126:13802. Production retains its existing image/configuration.
+
+| Check | Result |
+| --- | --- |
+| Node behavioral regressions | 25 passed |
+| Frontend JS syntax + diff check | Passed |
+| `go test ./...` | All packages passed; existing cached importer/fidelity results reused |
+| 320px and 1280px route sweeps | Ten existing routes each: no horizontal page overflow or render-error panel |
+| 390px phone interactions | Profile → filtered Items; conversation open/reload/back; empty selections; Settings reset/save |
+| Query round trips | Two people restored; limit10/page2 gives rows11–20 after reload |
+| Browser Back | Items → previous profile succeeds |
+| Fault injection | Failed Map template leaves a visible error; Retry reaches the intended filtered Map |
+| Job detail | Existing synthetic import config renders at phone width |
+| Live baseline | Read-only core pages and image-only Gallery;100 cards, zero videos requested |
+
+Standards review: no documented-standard breaches. Requirements/correctness
+reviews identified six issues, all repaired with focused regressions: Retry
+routing, page-size persistence, keyboard submit, none/Unknown type distinction,
+stale entity-filter restoration and stale Map date presearch.
+
+No new frontend dependency, importer/storage/schema change, NAS payload scan,
+production mutation, image build, release tag or deployment. Empty type selection
+uses `types=none` in UI URLs; Unknown remains `class=`. Native empty-class API
+semantics are preserved: the frontend resolves explicit none locally, for Items
+and both Conversation endpoints.
+
+Remaining qualifications: real iOS/Android keyboard/media behavior; a fresh-image
+packaging/rollout smoke test; live job/merge/import mutations (deliberately not run
+against personal data). Screenshot capture remains unreliable, so browser claims
+are DOM geometry and actual control interactions, not visual certification.
+Unsupported export categories and existing projection coverage gaps remain outside
+this UX completion pass. This is a **local beta candidate**, not a blanket claim
+that every upstream alpha feature is complete.
+
+## Why this application
+
+[Timelinize](https://timelinize.com/docs/) explicitly remains alpha upstream, but
+its entity-aware, multi-source personal timeline matches this task.
+[HPI](https://github.com/karlicoss/HPI) is primarily a programmable data interface;
+[Dawarich](https://dawarich.app/docs/features/imports/) focuses on location history.
+Those are useful adjacent tools, not evidence of a more complete drop-in browser
+for our Facebook/Twitter projection. Retain original exports independently.

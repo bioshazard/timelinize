@@ -19,9 +19,9 @@ on('click', '.dropdown-menu .select-all, .dropdown-menu .select-none', (e) => {
 // so I don't want to never use them, but we also can't allow the
 // browser to submit the form when we're using the datepicker.
 on('submit', 'form', e => {
-	if (e.submitter.classList.contains('air-datepicker-button')) {
-		e.preventDefault();
-	}
+	const calendarButton = e.submitter?.classList.contains('air-datepicker-button');
+	if (e.target.matches('form.filter') || calendarButton) e.preventDefault();
+	if (e.target.matches('form.filter') && !calendarButton) applyFilters();
 });
 
 
@@ -145,7 +145,7 @@ function emptyState(message) {
 	return element;
 }
 
-function showPageError(container) {
+function showPageError(container, destination = currentURI()) {
 	container.querySelector('.page-error')?.remove();
 	const error = document.createElement('div');
 	error.className = 'page-error alert alert-warning m-3';
@@ -156,7 +156,7 @@ function showPageError(container) {
 	retry.className = 'btn ms-2';
 	retry.type = 'button';
 	retry.textContent = 'Retry';
-	retry.addEventListener('click', () => navigateSPA());
+	retry.addEventListener('click', () => navigateSPA(destination));
 	error.append(text, retry);
 	container.prepend(error);
 }
@@ -183,11 +183,7 @@ function updateFilterResults() {
 }
 
 // when filter inputs change, update query string and re-render page
-on('change',
-	`.filter-input:not(.nonfilter),
-	.filter input:not(.nonfilter),
-	.filter select:not(.nonfilter),
-	.filter .dropdown-menu:not(.nonfilter)`, event => {
+function applyFilters() {
 
 	// convenient way to notify other parts of the code that the filter has been changed and the results are about to be updated/reset
 	$('.filter').dispatchEvent(new Event('change', { bubbles: true }));
@@ -201,7 +197,13 @@ on('change',
 	window.history.replaceState(null, '', newurl);
 
 	updateFilterResults();
-});
+}
+
+on('change',
+	`.filter-input:not(.nonfilter),
+	.filter input:not(.nonfilter),
+	.filter select:not(.nonfilter),
+	.filter .dropdown-menu:not(.nonfilter)`, applyFilters);
 
 
 

@@ -1,6 +1,5 @@
 function limit() {
-	const value = Number($('#filter-limit').value);
-	return Number.isFinite(value) && value >= 1 ? Math.min(Math.floor(value), 200) : 50;
+	return boundedPageSize($('#filter-limit').value);
 }
 
 function itemsPageFilterParams() {

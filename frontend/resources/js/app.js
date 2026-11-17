@@ -124,12 +124,14 @@ const app = {
 		return post("/api/jobs", params, "QUERY");
 	},
 	LoadConversation(params) {
+		if (Array.isArray(params.classification) && params.classification.length === 0) return Promise.resolve({items: []});
 		return post("/api/conversation", params);
 	},
 	ChartStats(name, repo_id, data) {
 		return get("/api/charts", { name, repo_id, ...data });
 	},
 	LoadRecentConversations(params) {
+		if (Array.isArray(params.classification) && params.classification.length === 0) return Promise.resolve([]);
 		return post("/api/recent-conversations", params);
 	},
 	MergeEntities(repo_id, base_entity_id, other_entity_ids) {
@@ -202,6 +204,15 @@ function load(key) {
 }
 
 
+function invokeEventHandler(handler, target, event) {
+	const failed = error => {
+		console.error('Action could not be completed', error);
+		notify({type: 'warning', title: 'Action could not be confirmed', message: 'Check the current state before trying again.'});
+	};
+	try { Promise.resolve(handler.call(target, event)).catch(failed); }
+	catch (error) { failed(error); }
+}
+
 function on(eventName, elemSelector, handler, capture) {
 	let events = [eventName];
 	if (eventName.indexOf(',') >= 0 || eventName.indexOf(' ') >= 0) {
@@ -221,12 +232,12 @@ function on(eventName, elemSelector, handler, capture) {
 				if (NodeList.prototype.isPrototypeOf(elemSelector)) {
 					for (el of elemSelector) {
 						if (el == target) {
-							handler.call(target, e);
+							invokeEventHandler(handler, target, e);
 							return;
 						}
 					}
 				} else if (!elemSelector || (target && target.matches(elemSelector))) {
-					handler.call(target, e);
+					invokeEventHandler(handler, target, e);
 					return;
 				}
 			}

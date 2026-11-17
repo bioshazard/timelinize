@@ -53,14 +53,11 @@ async function loadAndRenderMapData() {
 		const params = mapPageFilterParams(repo);
 		if ($('.date-input').datepicker.selectedDates.length == 0) {
 			const presearch = await app.SearchItems({
-				repo: repo.instance_id,
-				min_latitude: -90,
-				max_latitude: 90,
-				min_longitude: -180,
-				max_longitude: 180,
+				...params,
 				limit: 1,
 				flat: true
 			});
+			if (!stillCurrent()) return;
 			if (presearch.items && presearch.items[0]?.timestamp) {
 				params.start_timestamp = new Date(presearch.items[0].timestamp);
 				params.end_timestamp = new Date(presearch.items[0].timestamp);

@@ -50,6 +50,8 @@ test('item pagination requests one sentinel beyond the selected page size', () =
     currentPageNum: () => 2,
     commonFilterSearchParams() {}, queryParam: () => null,
   });
+  const helpers = fs.readFileSync(path.join(__dirname, '../resources/js/common-lib.js'), 'utf8');
+  vm.runInContext(helpers.slice(helpers.indexOf('function boundedPageSize('), helpers.indexOf('function escapeHTML(')), c);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../resources/js/items.js'), 'utf8'), c);
   const params = c.itemsPageFilterParams();
   assert.equal(params.offset, 50);

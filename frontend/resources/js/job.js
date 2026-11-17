@@ -4,6 +4,7 @@ const jobThroughputXRange = 60;   // range of the X-axis of the job throughput c
 const jobThroughputOffScreen = 2; // how many points to show off the left side of the chart, so it can be pruned without janking the display
 
 async function jobPageMain() {
+	const stillCurrent = beginViewRender($('.job-config-code'));
 	const {repoID, rowID} = parseURIPath()
 
 	const jobs = await app.Jobs({
@@ -11,11 +12,8 @@ async function jobPageMain() {
 		job_ids: [rowID]
 	});
 
-	if (jobs.length != 1) {
-		// TODO: handle error better
-		console.error("Bad/unknown job ID:", rowID, jobs);
-		return;
-	}
+	if (!stillCurrent()) return;
+	if (jobs?.length !== 1) throw new Error('Job not found');
 
 	const job = jobs[0];
 	console.log("JOB:", job);

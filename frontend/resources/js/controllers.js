@@ -134,7 +134,7 @@ tlz.pageControllers = {
 
 	"/pages/input.html": {
 		async render() {
-			inputPageMain();
+			await inputPageMain();
 		},
 	},
 
@@ -237,7 +237,7 @@ tlz.pageControllers = {
 			$('.navbar').classList.add('navbar-overlap');
 		},
 		async render() {
-			jobPageMain();
+			await jobPageMain();
 		},
 		unload() {
 			$('.navbar').classList.remove('navbar-overlap');

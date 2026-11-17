@@ -16,7 +16,7 @@ function filterContext(search) {
     URLSearchParams, Number, console,
     window: {location: {search}}, currentPageNum: () => 1,
     tlz: {openRepos: [{instance_id: 'demo'}]},
-    $: selector => selector === '.entity-input' ? {tomselect: control} : null,
+    $: selector => selector === '.entity-input' ? {tomselect: control, isConnected: true} : null,
     $$: () => [],
     app: {SearchEntities: async params => params.row_id.map(id => ({id}))},
   });
@@ -162,4 +162,125 @@ test('an explicit empty type selection does not silently search all native class
   assert.equal(called, false);
   c.api.SearchItems({});
   assert.equal(called, true);
+});
+
+test('page-size selection survives a filter URL round trip', async () => {
+  const {c} = filterContext('?limit=10&page=2');
+  const input = {value: '10'};
+  c.$ = selector => selector === '#filter-limit' ? input : null;
+  const helpers = source('common-lib');
+  vm.runInContext(helpers.slice(helpers.indexOf('function boundedPageSize('), helpers.indexOf('function escapeHTML(')), c);
+  const qs = c.filterToQueryString();
+  assert.equal(qs.get('limit'), '10');
+  input.value = '50';
+  await c.queryStringToFilter();
+  assert.equal(input.value, 10);
+});
+
+test('none and Unknown type selections have distinct reload semantics', async () => {
+  const {c} = filterContext('');
+  const unknown = {value: '', checked: false};
+  const message = {value: 'message', checked: false};
+  c.$$ = selector => selector.includes('input:checked') ? [unknown, message].filter(x => x.checked) : selector.includes('tl-item-class-dropdown input') ? [unknown, message] : [];
+  const none = c.filterToQueryString();
+  assert.equal(none.get('types'), 'none');
+  assert.equal(none.has('class'), false);
+  unknown.checked = message.checked = true;
+  c.window.location.search = '?' + none;
+  await c.queryStringToFilter();
+  assert.equal(unknown.checked, false);
+  assert.equal(message.checked, false);
+  unknown.checked = true;
+  const onlyUnknown = c.filterToQueryString();
+  assert.equal(onlyUnknown.get('class'), '');
+  assert.equal(onlyUnknown.has('types'), false);
+});
+
+test('filter restoration ignores entity lookup after its original input is detached', async () => {
+  const {c, selected} = filterContext('?entity=2');
+  let resolve;
+  const input = {tomselect: {addOption() {throw new Error('stale option');}, addItem() {throw new Error('stale item');}}, isConnected: true};
+  c.$ = selector => selector === '.entity-input' ? input : null;
+  c.app.SearchEntities = () => new Promise(r => {resolve = r;});
+  const pending = c.queryStringToFilter();
+  input.isConnected = false;
+  resolve([{id: 2}]);
+  await pending;
+  assert.deepEqual(selected, []);
+});
+
+test('Enter on filter forms prevents native submission and applies current filters', () => {
+  let handler, applied = 0, prevented = 0;
+  const c = vm.createContext({on: (_event, _selector, fn) => {handler = fn;}, applyFilters: () => {applied++;}});
+  section(c, 'common', "on('submit', 'form'", 'function classInfo(');
+  handler({submitter: null, target: {matches: () => true}, preventDefault() {prevented++;}});
+  assert.equal(applied, 1);
+  assert.equal(prevented, 1);
+});
+
+test('conversation type-none queries never send native all-class searches', async () => {
+  const c = vm.createContext({post: () => {throw new Error('unexpected request');}, Promise});
+  const text = source('app');
+  const conversation = text.slice(text.indexOf('LoadConversation(params)'), text.indexOf('ChartStats('));
+  const recent = text.slice(text.indexOf('LoadRecentConversations(params)'), text.indexOf('MergeEntities('));
+  vm.runInContext('var api = ({' + conversation + recent + '});', c);
+  assert.equal((await c.api.LoadConversation({classification: []})).items.length, 0);
+  assert.equal((await c.api.LoadRecentConversations({classification: []})).length, 0);
+});
+
+test('a failed page transition retains the intended Retry destination', async () => {
+  const {c} = navigationContext();
+  let destination;
+  c.showPageError = (_page, target) => {destination = target;};
+  c.fetch = async () => ({ok: false});
+  await c.navigateSPA('/map?entity=2');
+  assert.equal(destination, '/map?entity=2');
+});
+
+test('a stale map presearch cannot write a date into the next page', async () => {
+  let resolve, current = true;
+  const c = vm.createContext({
+    beginViewRender: () => () => current,
+    tlz: {openRepos: [{instance_id: 'demo'}]}, mapData: {},
+    loadAndRenderHeatmap() {}, mapPageFilterParams: () => ({}),
+    $: selector => {
+      if (selector === '#map-page') return {};
+      if (!current) throw new Error('stale map accessed next-page controls');
+      return {datepicker: {selectedDates: []}};
+    },
+    app: {SearchItems: () => new Promise(r => {resolve = r;})},
+  });
+  section(c, 'map', 'async function loadAndRenderMapData()', 'function makeMarker(');
+  const pending = c.loadAndRenderMapData();
+  current = false;
+  resolve({items: [{timestamp: '2020-01-01T12:00:00Z'}]});
+  await pending;
+});
+
+test('delegated asynchronous failures produce feedback rather than unhandled rejection', async () => {
+  const notices = [];
+  const c = vm.createContext({console: {error() {}}, notify: n => notices.push(n), Promise});
+  section(c, 'app', 'function invokeEventHandler(', 'function on(eventName,');
+  c.invokeEventHandler(async () => {throw new Error('offline');}, {}, {});
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(notices.length, 1);
+  assert.match(notices[0].message, /Check the current state/);
+});
+
+test('single-entity merge refuses self-merge and removal of the timeline owner', async () => {
+  const handlers = new Map();
+  let kept = '2', merged = '2', calls = 0;
+  const button = {classList: {contains: () => false}};
+  const c = vm.createContext({
+    on: (_event, selector, handler) => handlers.set(selector, handler),
+    $: selector => selector === '#do-entity-merge' ? button : {tomselect: {getValue: () => selector.includes('entity-keep') ? kept : merged}},
+    app: {MergeEntities: async () => {calls++;}},
+  });
+  vm.runInContext(source('modals'), c);
+  const submit = handlers.get('#do-entity-merge');
+  await submit({preventDefault() {}});
+  merged = '1';
+  await submit({preventDefault() {}});
+  assert.equal(calls, 0);
 });

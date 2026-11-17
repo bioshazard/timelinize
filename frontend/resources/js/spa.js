@@ -130,7 +130,7 @@ async function navigateSPA(addrBarDestination, scrollToTop) {
 		activateTooltips();
 		if (scrollToTop) window.scrollTo({top: 0, left: 0, behavior: 'instant'});
 	} catch (error) {
-		if (current()) showPageError(page);
+		if (current()) showPageError(page, addrBarDestination);
 		console.error('Page could not be loaded', error);
 	} finally {
 		clearTimeout(slowLoadingHandle);
