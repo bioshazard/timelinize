@@ -42,7 +42,7 @@
 		<link rel="stylesheet" href="/resources/css/vendor/nouislider.v15.6.1.css">
 		<link rel="stylesheet" href="/resources/css/vendor/tabler.min.css">
 		<link rel="stylesheet" href="/resources/css/vendor/tabler-vendors.min.css">
-		<link rel="stylesheet" href="/resources/css/common.css">
+		<link rel="stylesheet" href="/resources/css/common.css?v={{include `/resources/css/common.css` | sha256sum}}">
 
 
 		<!-- First vendored scripts, then Tabler, then ours -->
@@ -59,12 +59,12 @@
 		<script src="/resources/js/vendor/tabler.min.js"></script>
 
 		<!-- TODO: these should ideally NOT be deferred; separate out DOM-specific code that runs at page load -->
-		<script src="/resources/js/app.js"></script>
-		<script src="/resources/js/common-lib.js"></script>
-		<script src="/resources/js/common.js"></script>
-		<script src="/resources/js/modals.js" defer></script>
-		<script src="/resources/js/controllers.js"></script>
-		<script src="/resources/js/jobs.js"></script>
+		<script src="/resources/js/app.js?v={{include `/resources/js/app.js` | sha256sum}}"></script>
+		<script src="/resources/js/common-lib.js?v={{include `/resources/js/common-lib.js` | sha256sum}}"></script>
+		<script src="/resources/js/common.js?v={{include `/resources/js/common.js` | sha256sum}}"></script>
+		<script src="/resources/js/modals.js?v={{include `/resources/js/modals.js` | sha256sum}}" defer></script>
+		<script src="/resources/js/controllers.js?v={{include `/resources/js/controllers.js` | sha256sum}}"></script>
+		<script src="/resources/js/jobs.js?v={{include `/resources/js/jobs.js` | sha256sum}}"></script>
 
 
 
@@ -79,20 +79,20 @@
 
 
 		<!-- individual page scripts -->
-		<script src="/resources/js/conversations.js"></script>
-		<script src="/resources/js/dashboard.js"></script>
-		<script src="/resources/js/entities.js"></script>
-		<script src="/resources/js/entity.js"></script>
-		<script src="/resources/js/gallery.js"></script>
-		<script src="/resources/js/import.js"></script>
-		<script src="/resources/js/input.js"></script>
-		<script src="/resources/js/item.js"></script>
-		<script src="/resources/js/items.js"></script>
-		<script src="/resources/js/job.js"></script>
-		<script src="/resources/js/map.js"></script>
-		<script src="/resources/js/settings.js"></script>
-		<script src="/resources/js/setup.js"></script>
-		<script src="/resources/js/timeline.js"></script>
+		<script src="/resources/js/conversations.js?v={{include `/resources/js/conversations.js` | sha256sum}}"></script>
+		<script src="/resources/js/dashboard.js?v={{include `/resources/js/dashboard.js` | sha256sum}}"></script>
+		<script src="/resources/js/entities.js?v={{include `/resources/js/entities.js` | sha256sum}}"></script>
+		<script src="/resources/js/entity.js?v={{include `/resources/js/entity.js` | sha256sum}}"></script>
+		<script src="/resources/js/gallery.js?v={{include `/resources/js/gallery.js` | sha256sum}}"></script>
+		<script src="/resources/js/import.js?v={{include `/resources/js/import.js` | sha256sum}}"></script>
+		<script src="/resources/js/input.js?v={{include `/resources/js/input.js` | sha256sum}}"></script>
+		<script src="/resources/js/item.js?v={{include `/resources/js/item.js` | sha256sum}}"></script>
+		<script src="/resources/js/items.js?v={{include `/resources/js/items.js` | sha256sum}}"></script>
+		<script src="/resources/js/job.js?v={{include `/resources/js/job.js` | sha256sum}}"></script>
+		<script src="/resources/js/map.js?v={{include `/resources/js/map.js` | sha256sum}}"></script>
+		<script src="/resources/js/settings.js?v={{include `/resources/js/settings.js` | sha256sum}}"></script>
+		<script src="/resources/js/setup.js?v={{include `/resources/js/setup.js` | sha256sum}}"></script>
+		<script src="/resources/js/timeline.js?v={{include `/resources/js/timeline.js` | sha256sum}}"></script>
 	
 
 		<style>
@@ -105,7 +105,7 @@
 
 
 
-		<script src="/resources/js/spa.js"></script>
+		<script src="/resources/js/spa.js?v={{include `/resources/js/spa.js` | sha256sum}}"></script>
 
 	</head>
 

@@ -81,3 +81,20 @@ its entity-aware, multi-source personal timeline matches this task.
 [Dawarich](https://dawarich.app/docs/features/imports/) focuses on location history.
 Those are useful adjacent tools, not evidence of a more complete drop-in browser
 for our Facebook/Twitter projection. Retain original exports independently.
+
+## Existing-session upgrade correction
+
+An existing browser session reproduced mixed assets: updated profile HTML but
+cached old `entity.js`/SPA code, leaving new links unwired. First-party script and
+stylesheet URLs now contain a SHA-256 fingerprint rendered using the existing
+trusted-template include/Sprig mechanism. No build step, manual version bump or
+cache purge required; unchanged content retains a stable URL. These trusted
+first-party assets must not contain literal Go-template delimiters. Template
+render tests cover the real application entrypoint and changed/unchanged bytes.
+
+Retested `/entities/e92723a8-9ec9-49ce-ab2c-a41e04c92a6e/1` in the previously cached
+session: Items and Map navigate with entity1 selected; Merge opens with entity1
+as keeper. No merge was submitted. The synthetic owner currently has no owned
+items, so its Items page correctly shows an explicit empty state. The imported
+synthetic account is entity2; this is fixture identity separation, not missing
+personal production data. Production remains unchanged.

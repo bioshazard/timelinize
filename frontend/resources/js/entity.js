@@ -24,8 +24,6 @@ async function entityPageMain() {
 	const stillCurrent = beginViewRender($('#name'));
 	const {repoID, rowID} = parseURIPath();
 
-	$('#merge-entity').dataset.entityIDMerge = rowID;
-
 	const owner = await getOwner();
 
 	const entities = await app.SearchEntities({
@@ -42,6 +40,9 @@ async function entityPageMain() {
 		if (!ent) throw new Error('Entity not found');
 		return;
 	}
+	const mergeButton = $('#merge-entity');
+	if (ent.id === owner.id) mergeButton.dataset.entityIDKeep = rowID;
+	else mergeButton.dataset.entityIDMerge = rowID;
 	$('#entity-items').href = `/items?entity=${encodeURIComponent(rowID)}`;
 	$('#entity-map').href = `/map?entity=${encodeURIComponent(rowID)}`;
 	document.title = `${ent.name || 'Unknown'} — Profile`;
