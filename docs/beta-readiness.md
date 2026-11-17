@@ -1,5 +1,10 @@
 # Downstream beta candidate: existing workflows
 
+Shipped as [v0.0.30-bios.beta.1](https://github.com/bioshazard/timelinize/releases/tag/v0.0.30-bios.beta.1)
+on2026-11-17. The candidate-phase evidence below predates rollout. Linux amd64
+image build/attestation and an isolated packaged-image smoke test passed; real
+iOS/Android behavior remains qualified.
+
 AI-assisted implementation. Baseline: `9dcd26e`; no new feature families,
 frontend dependencies, bundler or framework. Original exports remain canonical.
 The fork is a browseable projection, not the sole backup.
@@ -38,8 +43,8 @@ Known unsupported export categories remain qualified in FORK.md and import docs.
 
 ## Candidate evidence
 
-All changes remain on `mobile-ux`; the LAN demo serves this checkout at
-http://192.168.1.126:13802. Production retains its existing image/configuration.
+During candidate testing, changes remained on `mobile-ux`; the LAN demo served the checkout at
+http://192.168.1.126:13802. Production was unchanged during that candidate phase.
 
 | Check | Result |
 | --- | --- |
@@ -70,7 +75,7 @@ packaging/rollout smoke test; live job/merge/import mutations (deliberately not 
 against personal data). Screenshot capture remains unreliable, so browser claims
 are DOM geometry and actual control interactions, not visual certification.
 Unsupported export categories and existing projection coverage gaps remain outside
-this UX completion pass. This is a **local beta candidate**, not a blanket claim
+this UX completion pass. This evidence describes the **local beta candidate**, not a blanket claim
 that every upstream alpha feature is complete.
 
 ## Why this application
@@ -97,4 +102,4 @@ session: Items and Map navigate with entity1 selected; Merge opens with entity1
 as keeper. No merge was submitted. The synthetic owner currently has no owned
 items, so its Items page correctly shows an explicit empty state. The imported
 synthetic account is entity2; this is fixture identity separation, not missing
-personal production data. Production remains unchanged.
+personal production data. Production was unchanged during that correction.
