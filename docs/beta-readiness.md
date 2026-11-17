@@ -60,7 +60,7 @@ routing, page-size persistence, keyboard submit, none/Unknown type distinction,
 stale entity-filter restoration and stale Map date presearch.
 
 No new frontend dependency, importer/storage/schema change, NAS payload scan,
-production mutation, image build, release tag or deployment. Empty type selection
+production mutation commands/configuration changes, image build, release tag or deployment. Empty type selection
 uses `types=none` in UI URLs; Unknown remains `class=`. Native empty-class API
 semantics are preserved: the frontend resolves explicit none locally, for Items
 and both Conversation endpoints.

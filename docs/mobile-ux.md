@@ -1,5 +1,8 @@
 # Mobile layout pass
 
+The subsequent existing-workflow completion pass and beta qualifications are in
+[Beta readiness](beta-readiness.md).
+
 Frontend-only changes, developed against a local synthetic timeline. No production
 configuration, data, importer, image or deployment changes.
 
