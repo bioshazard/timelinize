@@ -262,3 +262,23 @@ footer {
 	align-items: baseline;
 	font-weight: bold;
 }
+
+.page-header > .container-xl > .d-flex { flex-wrap: wrap; gap: .75rem; }
+.map-filters { flex: 1; min-width: 0; }
+.map-filters .filter { flex-wrap: wrap; align-items: center; }
+.map-filters .tl-date-picker { min-width: 0; }
+.map-filters .filter > * { min-width: 0; max-width: 100%; }
+.map-status { position: absolute; z-index: 2; top: 1rem; left: 1rem; right: 1rem; width: fit-content; padding: .75rem 1rem; background: var(--tblr-bg-surface); border-radius: .5rem; box-shadow: 0 1px 5px #0002; pointer-events: none; }
+@media (max-width: 767.98px) {
+  .page-wrapper { min-height: calc(100dvh - 56px); height: auto; }
+  .map-filters { flex-basis: 100%; margin-bottom: 0; }
+  .map-filters .filter { display: grid !important; grid-template-columns: minmax(0, 1fr); }
+  .map-filters .tl-date-picker, #select-entity-container { width: 100%; min-width: 0; }
+  .map-filters .ts-wrapper { width: 100%; }
+  #map-page { min-height: 55dvh; flex: 1; }
+  #map-page > .map-container { min-height: 55dvh; }
+  #infocard { top: .5rem; left: .5rem; width: calc(100% - 1rem); max-height: calc(100% - 1rem); }
+  #infocard .timestamp { flex-wrap: wrap; gap: .25rem; }
+  .color-legend { max-width: 100%; overflow-wrap: anywhere; }
+  .color-legend-gradient { width: min(150px, 35vw); }
+}

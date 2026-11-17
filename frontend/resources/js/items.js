@@ -51,9 +51,11 @@ function itemsPageFilterParams() {
 
 
 async function itemsMain() {
+	const stillCurrent = beginViewRender($('.filter-results'));
 	const repo = tlz.openRepos[0];
 	const params = itemsPageFilterParams();
 	const results = await app.SearchItems(params);
+	if (!stillCurrent()) return;
 
 	console.log("RESULTS:", params, results);
 
@@ -107,6 +109,7 @@ async function itemsMain() {
 
 	// The extra row only tells us whether Next should be enabled.
 	results.items = (results.items || []).slice(0, pageSize);
+	if (!results.items.length) $('.filter-results').append(emptyState('No items match these filters.'));
 	$('#items-results-info').textContent = results.items.length
 		? `Showing results ${offset + 1}–${offset + results.items.length}`
 		: 'No items match these filters';

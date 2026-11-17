@@ -21,6 +21,7 @@ const entityTypes = {
 };
 
 async function entityPageMain() {
+	const stillCurrent = beginViewRender($('#name'));
 	const {repoID, rowID} = parseURIPath();
 
 	$('#merge-entity').dataset.entityIDMerge = rowID;
@@ -35,14 +36,22 @@ async function entityPageMain() {
 
 	console.log("RESULT:", entities);
 
-	const ent = entities[0];
+	if (!stillCurrent()) return;
+	const ent = entities?.[0];
+	if (!$('#name') || !ent) {
+		if (!ent) throw new Error('Entity not found');
+		return;
+	}
+	$('#entity-items').href = `/items?entity=${encodeURIComponent(rowID)}`;
+	$('#entity-map').href = `/map?entity=${encodeURIComponent(rowID)}`;
+	document.title = `${ent.name || 'Unknown'} — Profile`;
 	
 	$('#entity-id').innerText = ent.id;
 	$('#entity-type').innerHTML = entityTypes[ent.type];
 	$('#picture').innerHTML = avatar(true, ent, 'avatar-xxl');
 	$('#name').innerText = ent.name || "Unknown";
 
-	for (const attr of ent.attributes) {
+	for (const attr of ent.attributes || []) {
 		if (attr.name == "birth_date") {
 			$('#birth-date').innerText = DateTime.fromSeconds(Number(attr.value)).toLocaleString(DateTime.DATE_FULL);
 			continue;
@@ -97,17 +106,19 @@ async function entityPageMain() {
 
 	// no need to block page load for this
 	app.SearchItems({
+		repo: repoID,
 		entity_id: [rowID],
 		only_total: true,
 		flat: true
 	}).then(result => {
-		$('#num-items').innerText = `${result.total.toLocaleString()} items`;
-	});
+		if (stillCurrent()) $('#num-items').innerText = `${(result.total || 0).toLocaleString()} items`;
+	}).catch(() => { if (stillCurrent()) $('#num-items').innerText = 'Item count unavailable'; });
 
 
 	///////////////////////////////////////////////////////////////////////////////
 
 	const attributeStats2 = await app.ChartStats("attributes_stacked_area", tlz.openRepos[0].instance_id, {entity_id: rowID});
+	if (!stillCurrent()) return;
 	console.log("ATTRIBUTE STATS:", attributeStats2);
 	for (const series of attributeStats2) {
 		series.type = 'bar';
@@ -133,12 +144,14 @@ async function entityPageMain() {
 
 	let option = {
 		title: {
-			text: 'Items by Attribute Over Time'
+			text: 'Items by attribute',
+			textStyle: {fontSize: 16}
 		},
 		grid: {
 			top: 80,
 			left: 0,
-			right: 0
+			right: 0,
+		containLabel: true
 		},
 		tooltip: {
 			trigger: 'axis',

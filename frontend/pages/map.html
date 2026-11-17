@@ -20,6 +20,8 @@
 					Map
 				</h2>
 			</div>
+			<details class="responsive-filters map-filters" open>
+			<summary>Filters</summary>
 			<div class="filter d-flex gap-2">
 
 				<div class="dropdown">
@@ -70,7 +72,7 @@
 				</div>
 
 				<div class="input-group flex-nowrap">
-					<button id="proximity-toggle" class="btn btn-icon" type="button" data-bs-toggle="button">
+					<button aria-label="Choose proximity on map" id="proximity-toggle" class="btn btn-icon" type="button" data-bs-toggle="button">
 						<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-viewfinder" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
 							<path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
 							<circle cx="12" cy="12" r="9"></circle>
@@ -85,7 +87,7 @@
 				</div>
 
 				<div class="input-group flex-nowrap">
-					<button id="bbox-toggle" class="btn btn-icon" type="button" data-bs-toggle="button">
+					<button aria-label="Choose bounding box on map" id="bbox-toggle" class="btn btn-icon" type="button" data-bs-toggle="button">
 						<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-shape" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
 							<path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
 							<circle cx="5" cy="5" r="2"></circle>
@@ -99,7 +101,7 @@
 							</svg>
 					</button>
 					<input type="text" id="bbox" class="filter-input form-control" placeholder="Bounding box" disabled>
-					<button id="bbox-clear" class="btn btn-icon text-red d-none" type="button">
+					<button aria-label="Clear bounding box" id="bbox-clear" class="btn btn-icon text-red d-none" type="button">
 						<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x m-0" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
 							<path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
 							<line x1="18" y1="6" x2="6" y2="18"></line>
@@ -115,12 +117,14 @@
 
 
 			</div>
+			</details>
 		</div>
 	</div>
 </div>
 
 <div id="map-page" class="page-body">
 	<div class="map-container"></div>
+	<div id="map-empty" class="map-status d-none" role="status">No locations match these filters.</div>
 
 	<div class="bottom-island">
 		<div class="color-legend">

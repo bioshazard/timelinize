@@ -1,8 +1,9 @@
 async function entitiesPageMain() {
-	filterAndRenderEntitiesList();
+	return filterAndRenderEntitiesList();
 }
 
 async function filterAndRenderEntitiesList() {
+	const stillCurrent = beginViewRender($('#results-container'));
 	const searchParams = {
 		repo: tlz.openRepos[0].instance_id,
 		order_by: 'id',
@@ -18,13 +19,23 @@ async function filterAndRenderEntitiesList() {
 	}
 
 	const entities = await app.SearchEntities(searchParams);
+	if (!stillCurrent()) return;
 	console.log("GOT ENTITIES:", entities);
 	
 	$('#results-container').replaceChildren();
 
-	if (!entities) {
-		return; // there SHOULD always be one, but just in case...
+	if (!entities?.length) {
+		const row = document.createElement('tr');
+		const cell = document.createElement('td');
+		cell.colSpan = 8;
+		cell.append(emptyState('No people or entities match your search.'));
+		row.append(cell);
+		$('#results-container').append(row);
+		$('#select-all-entities').checked = false;
+		$('#merge-entities').classList.add('disabled');
+		return;
 	}
+	$('#merge-entities').classList.add('disabled');
 
 	const owner = await getOwner();
 
@@ -54,7 +65,7 @@ async function filterAndRenderEntitiesList() {
 		// generic attributes... if there aren't any identity attributes, just show
 		// the first generic attributes, doesn't really matter at that point
 		const attrs = {};
-		for (const attr of ent.attributes) {
+		for (const attr of ent.attributes || []) {
 			if (!attrs[attr.name]) {
 				attrs[attr.name] = [];
 			}
@@ -189,10 +200,11 @@ on('change', '#select-all-entities', e => {
 
 on('click', '#confirm-merge-entities', async e => {
 	const button = $('#confirm-merge-entities');
+	if (button.classList.contains('disabled')) return;
 
 	const done = function() {
 		button.classList.remove('disabled');
-		$('spinner', button)?.remove();
+		$('.spinner-border', button)?.remove();
 		bootstrap.Modal.getInstance('#modal-merge-multiple-entities').hide();
 	};
 	
@@ -210,9 +222,10 @@ on('click', '#confirm-merge-entities', async e => {
 	button.classList.add('disabled');
 
 	// choose an entity to use as the keeper, I'm going to go with the lowest ID (oldest)
-	ids.sort();
-	keepID = ids.shift();
+	ids.sort((a, b) => a - b);
+	const keepID = ids.shift();
 
+	try {
 	// perform merge
 	await app.MergeEntities(tlz.openRepos[0].instance_id, keepID, ids);
 
@@ -224,17 +237,19 @@ on('click', '#confirm-merge-entities', async e => {
 	
 	
 	// close modal and update list
-	done();
-	filterAndRenderEntitiesList();
+	await filterAndRenderEntitiesList();
 
 	// also update owner picture at the top if its entity was in the merge
 	if (keepID == 1 || ids[0] == 1) {
-		updateRepoOwners(true);
+		await updateRepoOwners(true);
 	}
+	} catch (error) {
+		notify({type: 'warning', title: 'Merge request unconfirmed', message: 'Refresh the entity list before trying again.'});
+	} finally { done(); }
 });
 
-on('hidden.bs.modal', '#confirm-merge-entities', async e => {
+on('hidden.bs.modal', '#modal-merge-multiple-entities', async e => {
 	// reset UI state
 	$('#confirm-merge-entities').classList.remove('disabled');
-	$('#confirm-merge-entities .spinner-border').remove();
+	$('#confirm-merge-entities .spinner-border')?.remove();
 });

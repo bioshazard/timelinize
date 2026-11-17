@@ -3,6 +3,7 @@ var pageItems;
 const galleryLimit = 100;
 
 async function galleryPageMain() {
+	const stillCurrent = beginViewRender($('.filter-results'));
 	// set up the preview modal to work on our page
 	PreviewModal.prev = async (currentItem) => {
 		// TODO: These don't play nicely when semantic_text is filled out, is there a better way to do these?
@@ -34,6 +35,7 @@ async function galleryPageMain() {
 
 	// perform search
 	const results = await app.SearchItems(galleryFilterParams());
+	if (!stillCurrent()) return;
 	console.log("RESULTS:", results)
 
 	// configure pagination links: enable next if we overflowed the search results limit,
@@ -65,15 +67,14 @@ async function galleryPageMain() {
 		}
 	}
 
-	if (!results.items) {
-		return;
-	}
+	results.items = results.items || [];
 	
 	results.items.splice(galleryLimit); // strip the extra item that is only used for pagination purposes
 
 	// reset items
 	pageItems = {};
 	$('.filter-results').replaceChildren();
+	if (!results.items.length) $('.filter-results').append(emptyState('No photos or videos match these filters.'));
 
 	// render each item
 	for (let item of results.items) {

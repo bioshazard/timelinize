@@ -1,7 +1,34 @@
+async function loadSettingsForm() {
+	tlz.settings = await app.GetSettings();
+	if (!$('#submit-settings')) return;
+	$('#mapbox-api-key').value = tlz.settings?.application?.mapbox_api_key || '';
+	$('#demo-mode-enabled').checked = tlz.settings?.application?.obfuscation?.enabled === true;
+	$('#demo-mode-enabled').dataset.originalValue = String($('#demo-mode-enabled').checked);
+	$('#data-file-names').checked = tlz.settings?.application?.obfuscation?.data_files === true;
+	$('#website-dir').value = tlz.settings?.application?.website_dir || '';
+	// Reset any unsaved drawn circles from the persisted settings as well.
+	if (tlz.mapDrawBar) {
+		tlz.mapDrawBar.draw.deleteAll();
+		$('#secret-location-list').replaceChildren();
+		for (const loc of tlz.settings?.application?.obfuscation?.locations || []) {
+			const circle = MapboxDrawGeodesic.createCircle([loc.lon, loc.lat], loc.radius_meters / 1000);
+			circle.properties.name = loc.description;
+			tlz.mapDrawBar.draw.add(circle);
+			settingsMapLocObfuscationDrawCreate({features: [circle]});
+		}
+	}
+}
+
+on('click', '#cancel-settings', async () => {
+	try { await loadSettingsForm(); }
+	catch (error) { notify({type: 'danger', title: 'Could not reset settings. Try again.'}); }
+});
+
 // Changes the settings tab that is active, and settings page content.
 // The target should include the hash (#) prefix and should correspond
 // with the href and div IDs.
 function changeSettingsTab(target) {
+	if (![...$$('.settings-nav a')].some(link => link.getAttribute('href') === target)) target = '#general';
 	$$(`.settings-nav .active`).forEach(elem => {
 		elem.classList.remove('active');
 	});
@@ -15,7 +42,7 @@ function changeSettingsTab(target) {
 	document.title = `Settings - ${$('h2', target).textContent}`;
 
 	// FIXME: For some reason this causes a duplicate history entry to be added, but after navigating again it disappears
-	window.history.pushState(null, null, target);
+	window.history.replaceState(null, null, target);
 }
 
 // when the map is moved into the location picker, set up its interactive draw features;
@@ -200,13 +227,17 @@ on('click', '.settings-nav a', e => {
 	e.preventDefault();
 
 	// get the href literally, not expanded as e.target.href is
-	changeSettingsTab(e.target.getAttribute('href'));
+	changeSettingsTab(e.target.closest('a').getAttribute('href'));
 
 	return false;
 });
 
 // save settings!
 on('click', '#submit-settings', async event => {
+	const button = $('#submit-settings');
+	if (button.disabled) return;
+	button.disabled = true;
+	try {
 	const mutatedSettings = {
 		application: {
 			"app.obfuscation.enabled":  $('#demo-mode-enabled').checked,
@@ -243,7 +274,13 @@ on('click', '#submit-settings', async event => {
 	});
 
 	// if demo mode setting changed, reload relevant page elements
-	if ($('#demo-mode-enabled').checked != $('#demo-mode-enabled').dataset.originalValue) {
-		updateRepoOwners(true);
+	if (String($('#demo-mode-enabled').checked) !== $('#demo-mode-enabled').dataset.originalValue) {
+		await updateRepoOwners(true);
+	}
+	$('#demo-mode-enabled').dataset.originalValue = String($('#demo-mode-enabled').checked);
+	} catch (error) {
+		notify({type: 'danger', title: 'Settings were not saved. Try again.'});
+	} finally {
+		button.disabled = false;
 	}
 });

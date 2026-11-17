@@ -561,151 +561,35 @@ function jobProgressUpdate(job) {
 
 // TODO: These all have the same basic behavior. How can I refactor this and avoid the repetition?
 
-on('click', '.cancel-job', async e => {
-	const target = e.target.closest('.cancel-job');
+async function runJobAction(event, action) {
+	event.preventDefault();
+	const target = event.target.closest(`.${action}-job`);
+	if (target.classList.contains('disabled')) return;
 	const jobID = Number(target.dataset.jobId);
-
-	for (const elem of $$(`.cancel-job.job-id-${jobID}`)) {
-		elem.classList.add('disabled');
-		let textElem = $('.cancel-job-text', elem); // for links that have more than just the text in it
-		if (!textElem) {
-			textElem = elem;
-		}
-		textElem.dataset.startingText = textElem.innerText;
-		textElem.innerText = "Canceling...";
+	const controls = [...$$(`.${action}-job.job-id-${jobID}`)];
+	for (const control of controls) {
+		control.classList.add('disabled');
+		control.setAttribute('aria-disabled', 'true');
 	}
-
-	await app.CancelJobs(tlz.openRepos[0].instance_id, [jobID]);
-
-	for (const elem of $$(`.cancel-job.job-id-${jobID}`)) {
-		elem.classList.remove('disabled');
-		let textElem = $('.cancel-job-text', elem); // for links that have more than just the text in it
-		if (!textElem) {
-			textElem = elem;
+	try {
+		const repoID = tlz.openRepos[0].instance_id;
+		if (action === 'cancel') await app.CancelJobs(repoID, [jobID]);
+		if (action === 'pause') await app.PauseJob(repoID, jobID);
+		if (action === 'unpause') await app.UnpauseJob(repoID, jobID);
+		if (action === 'start' || action === 'restart') {
+			await app.StartJob(repoID, jobID, action === 'restart');
+			delete tlz.jobStats[jobID];
 		}
-		textElem.innerText = textElem.dataset.startingText;
-		delete textElem.dataset.startingText;
-	}
-});
-
-on('click', '.pause-job', async e => {
-	const target = e.target.closest('.pause-job');
-	const jobID = Number(target.dataset.jobId);
-
-	for (const elem of $$(`.pause-job.job-id-${jobID}`)) {
-		elem.classList.add('disabled');
-		let textElem = $('.pause-job-text', elem); // for links that have more than just the text in it
-		if (!textElem) {
-			textElem = elem;
-		}
-		textElem.dataset.startingText = textElem.innerText;
-		textElem.innerText = "Pausing...";
-	}
-
-	await app.PauseJob(tlz.openRepos[0].instance_id, jobID);
-
-	for (const elem of $$(`.pause-job.job-id-${jobID}`)) {
-		elem.classList.remove('disabled');
-		let textElem = $('.pause-job-text', elem); // for links that have more than just the text in it
-		if (!textElem) {
-			textElem = elem;
-		}
-		textElem.innerText = textElem.dataset.startingText;
-		delete textElem.dataset.startingText;
-	}
-});
-
-
-on('click', '.unpause-job', async e => {
-	const target = e.target.closest('.unpause-job');
-	const jobID = Number(target.dataset.jobId);
-
-	for (const elem of $$(`.unpause-job.job-id-${jobID}`)) {
-		elem.classList.add('disabled');
-		let textElem = $('.unpause-job-text', elem); // for links that have more than just the text in it
-		if (!textElem) {
-			textElem = elem;
-		}
-		textElem.dataset.startingText = textElem.textContent;
-		textElem.textContent = "Resuming...";
-	}
-
-	await app.UnpauseJob(tlz.openRepos[0].instance_id, jobID);
-
-	for (const elem of $$(`.unpause-job.job-id-${jobID}`)) {
-		elem.classList.remove('disabled');
-		let textElem = $('.unpause-job-text', elem); // for links that have more than just the text in it
-		if (!textElem) {
-			textElem = elem;
-		}
-		// it is possible for this element to be rendered while waiting for UnpauseJob to return,
-		// meaning that we never changed its text content, so we never set startingText, and
-		// if we did this without checking we would essentially empty its text contents each
-		// time it is pressed
-		if (textElem.dataset.startingText) {
-			textElem.textContent = textElem.dataset.startingText;
-			delete textElem.dataset.startingText;
+	} catch (error) {
+		notify({type: 'warning', title: 'Job request unconfirmed', message: 'Refresh job status before trying again.'});
+	} finally {
+		for (const control of controls) {
+			control.classList.remove('disabled');
+			control.removeAttribute('aria-disabled');
 		}
 	}
-});
+}
 
-on('click', '.start-job', async e => {
-	const target = e.target.closest('.start-job');
-	const jobID = Number(target.dataset.jobId);
-
-	for (const elem of $$(`.start-job.job-id-${jobID}`)) {
-		elem.classList.add('disabled');
-		let textElem = $('.start-job-text', elem); // for links that have more than just the text in it
-		if (!textElem) {
-			textElem = elem;
-		}
-		textElem.dataset.startingText = textElem.innerText;
-		textElem.innerText = "Starting...";
-	}
-
-	await app.StartJob(tlz.openRepos[0].instance_id, jobID, false);
-
-	// clear any previous stats (issue #158)
-	// (can happen if timeline is cleared between test runs)
-	delete tlz.jobStats[jobID];
-
-	for (const elem of $$(`.start-job.job-id-${jobID}`)) {
-		elem.classList.remove('disabled');
-		let textElem = $('.start-job-text', elem); // for links that have more than just the text in it
-		if (!textElem) {
-			textElem = elem;
-		}
-		textElem.innerText = textElem.dataset.startingText;
-		delete textElem.dataset.startingText;
-	}
-});
-
-on('click', '.restart-job', async e => {
-	const target = e.target.closest('.restart-job');
-	const jobID = Number(target.dataset.jobId);
-
-	for (const elem of $$(`.restart-job.job-id-${jobID}`)) {
-		elem.classList.add('disabled');
-		let textElem = $('.restart-job-text', elem); // for links that have more than just the text in it
-		if (!textElem) {
-			textElem = elem;
-		}
-		textElem.dataset.startingText = textElem.innerText;
-		textElem.innerText = "Restarting...";
-	}
-
-	await app.StartJob(tlz.openRepos[0].instance_id, jobID, true);
-
-	// clear previous stats (issue #158)
-	delete tlz.jobStats[jobID];
-
-	for (const elem of $$(`.restart-job.job-id-${jobID}`)) {
-		elem.classList.remove('disabled');
-		let textElem = $('.restart-job-text', elem); // for links that have more than just the text in it
-		if (!textElem) {
-			textElem = elem;
-		}
-		textElem.innerText = textElem.dataset.startingText;
-		delete textElem.dataset.startingText;
-	}
-});
+for (const action of ['cancel', 'pause', 'unpause', 'start', 'restart']) {
+	on('click', `.${action}-job`, event => runJobAction(event, action));
+}

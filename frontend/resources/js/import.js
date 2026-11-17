@@ -377,7 +377,8 @@ on('click', '#collapse-all-dsgroup', event => {
 
 // begin import!
 on('click', '#start-import', async event => {
-	// TODO: validate input (data source options, etc) -- show modal of DS options that need fixing
+	if ($('#start-import').classList.contains('disabled') || $('#start-import').disabled) return;
+	// Options validation below precedes the native mutation.
 
 	const repoID = tlz.openRepos[0].instance_id;
 
@@ -441,6 +442,9 @@ on('click', '#start-import', async event => {
 
 	console.log("IMPORT PARAMS:", importParams)
 
+	const startButton = $('#start-import');
+	startButton.disabled = true;
+	try {
 	const result = await app.Import(importParams);
 	console.log("JOB STARTED:", result)
 
@@ -459,8 +463,11 @@ on('click', '#start-import', async event => {
 		navigateSPA(`/input?repo_id=${repoID}&job_id=${result.job_id}`, true);
 	} else {
 		// otherwise, redirect to job status, I guess
-		navigateSPA(`/jobs/${repoID}/${result.job_id}`, true);
+		await navigateSPA(`/jobs/${repoID}/${result.job_id}`, true);
 	}
+	} catch (error) {
+		notify({type: 'warning', title: 'Import request unconfirmed', message: 'Check Jobs before trying again.'});
+	} finally { startButton.disabled = false; }
 });
 
 async function dataSourceOptions(ds) {

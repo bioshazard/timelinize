@@ -60,180 +60,94 @@ function currentURI() {
 // path and optional query string) to show in the address bar (the user-friendly URI). If omitted,
 // or not a string (sometimes it is an event handler) it defaults to the path and query currently
 // in the address bar.
+let navigationVersion = 0;
+
 async function navigateSPA(addrBarDestination, scrollToTop) {
-	$('#page-content').classList.add('opacity0');
+	const version = ++navigationVersion;
+	const current = () => version === navigationVersion;
+	const page = $('#page-content');
+	page.classList.add('opacity0');
+	let loader;
+	const slowLoadingHandle = setTimeout(() => {
+		if (!current()) return;
+		loader = document.createElement('span');
+		loader.classList.add('slow-loader', 'page-loader');
+		page.before(loader);
+	}, 1000);
 
-	// when used as an event handler, the first argument may be an event object,
-	// or we might call it without any argument; default to navigating to what the
-	// address bar shows when a URI string isn't explicitly passed in
-	if (typeof addrBarDestination !== 'string') {
-		addrBarDestination = currentURI();
+	try {
+		if (typeof addrBarDestination !== 'string') addrBarDestination = currentURI();
+		if (!tlz.openRepos.length || !await updateRepoOwners()) {
+			addrBarDestination = '/setup';
+		} else if (addrBarDestination.startsWith('/setup')) {
+			addrBarDestination = '/';
+		}
+		if (!current()) return;
+		const skipPushState = addrBarDestination === currentURI();
+		const parts = splitPathAndQueryString(addrBarDestination);
+		const matches = parts.path.match(/\/(items|entities|jobs)\/[\w-]+\/\d+$/);
+		if (matches) parts.path = {items: '/item', entities: '/entity', jobs: '/job'}[matches[1]];
+		const destPath = addrBarPathToPagePath(parts.path);
+		const response = await fetch(destPath + (parts.query || ''));
+		if (!response.ok) throw new Error('Page unavailable');
+		const data = await response.text();
+		// An unknown route may return the SPA shell with HTTP 200.
+		if (!tlz.pageControllers[destPath]) throw new Error('Page unavailable');
+		if (!current()) return;
+
+		if (tlz.map) {
+			tlz.map.tl_containers = new Map();
+			tlz.map.tl_clear();
+		}
+		for (const input of $$('.date-input')) input.datepicker?.destroy();
+		for (const element of $$('[data-bs-toggle="tooltip"]')) bootstrap.Tooltip.getInstance(element)?.dispose();
+		for (const element of $$('#page-content *')) element.chart?.dispose();
+		await tlz.currentPageController?.unload?.();
+		if (!current()) return;
+		if (!skipPushState) history.pushState(null, null, addrBarDestination);
+		page.innerHTML = data;
+		initResponsiveFilters();
+		if (matchMedia('(max-width: 767.98px)').matches) {
+			bootstrap.Collapse.getInstance($('#navbar-menu'))?.hide();
+		}
+		const title = $('body title');
+		if (title) { document.title = title.textContent; title.remove(); }
+		const controller = tlz.pageControllers[destPath];
+		tlz.currentPageController = controller;
+		await controller.load?.();
+		if (!current()) return;
+		for (const element of $$('.filter select.tl-data-source')) {
+			await newDataSourceSelect(element);
+			if (!current()) return;
+		}
+		for (const element of $$('.filter .tl-item-class-dropdown')) {
+			renderFilterDropdown(element, 'Types', 'item_classes');
+		}
+		await queryStringToFilter();
+		if (!current()) return;
+		await controller.render?.();
+		if (!current()) return;
+		activateTooltips();
+		if (scrollToTop) window.scrollTo({top: 0, left: 0, behavior: 'instant'});
+	} catch (error) {
+		if (current()) showPageError(page);
+		console.error('Page could not be loaded', error);
+	} finally {
+		clearTimeout(slowLoadingHandle);
+		loader?.remove();
+		if (current()) {
+			page.classList.remove('opacity0');
+			$('#app-loader')?.remove();
+		}
 	}
-
-	// redirect to setup (or away from it) accordingly
-	if (!tlz.openRepos.length) {
-		console.log("no repositories are open; redirecting to setup");
-		addrBarDestination = "/setup";
-	} else if (!await updateRepoOwners()) {
-		// no owner yet, maybe the repo is still being set up
-		console.log(`repository ${tlz.openRepos[0].instance_id} has no owner; redirecting to setup`);
-		addrBarDestination = "/setup";
-	} else if (addrBarDestination.startsWith("/setup")) {
-		console.log("repository is already open and non-empty; redirecting to dashboard");
-		addrBarDestination = "/";
-	}
-	
-	// don't change history if we aren't changing the address bar state
-	// (this happens on initial page load, or when the back button is used as the URL has already been changed)
-	const skipPushState = addrBarDestination == currentURI();
-	
-	// split the user-facing URI into its path and query parts
-	const addrBarDestinationParts = splitPathAndQueryString(addrBarDestination);
-
-	// special cases: rewrite when path contains application data
-	const matches = addrBarDestinationParts.path.match(/\/(items|entities|jobs)\/[\w-]+\/\d+$/);
-	if (matches) {
-		const rewriteTo = {"items": "/item", "entities": "/entity", "jobs": "/job"}
-		addrBarDestinationParts.path = rewriteTo[matches[1]]
-	}
-
-	// craft the true destination (not shown to the user)
-	const destPath = addrBarPathToPagePath(addrBarDestinationParts.path);
-	const destination = destPath + (addrBarDestinationParts.query || "");
-
-	console.log("NAVIGATING:", destination, addrBarDestinationParts);
-
-	// show a loading indicator if things are going slow
-	let slowLoadingHandle;
-	if (!$('#app-loader')) {
-		slowLoadingHandle = setTimeout(function() {
-			const span = document.createElement('span');
-			span.classList.add('slow-loader', 'page-loader');
-			$('#page-content').insertAdjacentElement('beforebegin', span);
-		}, 1000);
-	}
-
-	// immediately perform the request, but don't start changing the page until it has faded out
-	// TODO: if URL not found or something, replaceState(null, null, "/") maybe?
-	const promise = fetch(destination).then((response) => response.text());
-
-	// wait for page to finish fading out before
-	setTimeout(async function() {
-		promise.then(async (data) => {
-			if (tlz.map) {
-				tlz.map.tl_containers = new Map();
-				tlz.map.tl_clear();
-			}
-			for (const dateInputEl of $$('.date-input')) {
-				// it seems like a good idea to clean up our AirDatepickers, but
-				// I haven't confirmed whether this is truly necessary
-				dateInputEl.datepicker.destroy();
-			}
-
-			// run any code needed to help the page unload
-			if (tlz.currentPageController?.unload) {
-				// TODO: await?
-				tlz.currentPageController.unload();
-			}
-
-			// update URL bar and history
-			if (!skipPushState) {
-				history.pushState(null, null, addrBarDestination);
-			}
-
-			// replace page content
-			$('#page-content').innerHTML = data;
-			initResponsiveFilters();
-			if (window.matchMedia('(max-width: 767.98px)').matches) {
-				bootstrap.Collapse.getInstance($('#navbar-menu'))?.hide();
-			}
-
-			// adjust page title
-			const newTitleEl = $('body title');
-			if (newTitleEl) {
-				$('head title').innerText = newTitleEl.innerText;
-				newTitleEl.remove();
-			}
-
-			// set up the page, and store a reference to the current page's
-			// controller, since it will be used later like when unloading it
-			tlz.currentPageController = tlz.pageControllers[destPath];
-			if (tlz.currentPageController?.load) {
-				await tlz.currentPageController.load();
-			}
-
-			// Render data source filter inputs (we don't use forEach here because it does not await async functions!)
-			for (const e of $$('.filter select.tl-data-source')) {
-				await newDataSourceSelect(e);
-			};
-
-			// Render item classification filter dropdowns
-			$$('.filter .tl-item-class-dropdown').forEach(e => {
-				renderFilterDropdown(e, "Types", 'item_classes');
-			});
-
-			await queryStringToFilter();
-
-			// set up the page, and store a reference to the current page's
-			// controller, since it will be used later like when unloading it
-			if (tlz.currentPageController?.render) {
-				await tlz.currentPageController.render();
-			}
-
-			activateTooltips();
-
-			// this isn't desirable every time, like when going Back, or refreshing the page,
-			// as we may want to keep the current position; but usually when navigating to a new
-			// page from a page where we've been scrolled down, it's weird to have it load to
-			// the bottom of the page... so generally we want to scroll up on link clicks
-			if (scrollToTop) {
-				window.scrollTo({
-					top: 0,
-					left: 0,
-					behavior: 'instant'
-				});
-			}
-
-			// hide any loading indicator (or prevent it from appearing in the first place)
-			if (slowLoadingHandle) {
-				clearTimeout(slowLoadingHandle);
-				$('.slow-loader.page-loader')?.remove();
-			}
-
-			// fade the content in, but wait a little bit for the page to have a chance to render
-			setTimeout(function() {
-				$('#page-content').classList.remove('opacity0');
-			}, 250);
-
-			// if the full page app loader is still showing (initial page load), fade it out gracefully
-			// (these timings are estimates; maybe advanced browser APIs could help us know when the page
-			// is done painting, but sounds like a lot of work)
-			if ($('#app-loader') && !$('#app-loader').classList.contains('fade-out')) {
-				// first start to fade out the loader itself (fading out only its container looks weird)
-				setTimeout(function() {
-					$('#app-loader .app-loader').classList.add('fade-out');
-
-					// then fade out its backdrop/container
-					setTimeout(function() {
-						$('#app-loader').classList.add('fade-out');
-
-						// once index has initially loaded, app loader no longer needed
-						setTimeout(function() {
-							$('#app-loader').remove();
-						}, 1000);
-					}, 100);
-				}, 100);
-			}
-
-		});
-
-	}, 250);
 }
-
 
 // when links to pages within the app are clicked, fake-navigate
 on('click', '[href^="/"]:not([download])', async e => {
+	const link = e.target.closest('a');
+	if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || link?.target === '_blank') return;
 	e.preventDefault();
+	if (link?.matches('.disabled, [aria-disabled="true"]')) return;
 	const destination = e.target.closest(':not(use)[href]').getAttribute('href'); // can't use .href because that returns a fully-qualified URL, which actually breaks in Wails dev; and we only accept path+query
 	await navigateSPA(destination, true);
 	return false;
@@ -242,6 +156,7 @@ on('click', '[href^="/"]:not([download])', async e => {
 // this is for filter changes
 on('click', `.filter [href^="?"], .pagination [href^="?"]`, async event => {
 	event.preventDefault();
+	if (event.target.closest('a')?.matches('.disabled, [aria-disabled="true"]')) return;
 	
 	// update URL bar so the filter will read the updated page number
 	const destination = event.target.closest(':not(use)[href]').getAttribute('href'); // can't use .href because that returns a fully-qualified URL, which actually breaks in Wails dev; and we only accept path+query

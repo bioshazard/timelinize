@@ -143,7 +143,7 @@ async function renderConversationsPage() {
 
 
 async function renderConversations() {
-	conversationVersion++;
+	const version = ++conversationVersion;
 	messages = [];
 	_rendering = false;
 	$('#conversation-heading').classList.add('d-none');
@@ -161,7 +161,8 @@ async function renderConversations() {
 	commonFilterSearchParams(params);
 
 	const start = DateTime.now();
-	const results = await app.LoadRecentConversations(params);
+	const results = (await app.LoadRecentConversations(params)) || [];
+	if (version !== conversationVersion) return;
 	const end = DateTime.now();
 	const duration = end.diff(start, 'seconds');
 
@@ -173,7 +174,7 @@ async function renderConversations() {
 	$('#convos-count').innerText = results.length;
 	$('#convos-duration').innerText = duration.toHuman();
 
-	// TODO: display something nice if there's no results
+	if (!results.length) $('#convos-container').append(emptyState('No conversations match these filters.'));
 
 	for (const convo of results) {
 		// put repo owner first; they're most likely to be in all the conversations,
@@ -190,11 +191,11 @@ async function renderConversations() {
 		const maxRenderNames = 3;
 		const maxTooltipNames = 10;
 		for (const entity of convo.entities) {
-			const display = entity.name || entity.attributes[0].value;
-			const displayTooltip = entity.name ? entity.attributes[0].value : "";
+			const display = entity.name || entity.attributes?.[0]?.value || 'Unknown person';
+			const displayTooltip = entity.name ? entity.attributes?.[0]?.value || "" : "";
 
 			if (renderNames.length < maxRenderNames) {
-				renderNames.push(`<a href="/entities/${tlz.openRepos[0].instance_id}/${entity.id}" title="${displayTooltip}">${display}</a>`);
+				renderNames.push(`<a href="/entities/${tlz.openRepos[0].instance_id}/${entity.id}" title="${escapeHTML(displayTooltip)}">${escapeHTML(display)}</a>`);
 			} else {
 				if (tooltipNames.length < maxTooltipNames) {
 					tooltipNames.push(display);
@@ -205,7 +206,7 @@ async function renderConversations() {
 			}
 		}
 		if (convo.entities.length > maxRenderNames) {
-			renderNames.push(`<span title="${tooltipNames.join(", ")}">+${convo.entities.length-maxRenderNames} more</span>`);
+			renderNames.push(`<span title="${escapeHTML(tooltipNames.join(", "))}">+${convo.entities.length-maxRenderNames} more</span>`);
 		}
 		$('.card-title', elem).innerHTML = renderNames.join(", ");
 
@@ -227,7 +228,7 @@ async function renderConversations() {
 				</span>`;
 			entitiesWithAvatars = convo.entities.slice(0, maxAvatars);
 		}
-		const avatars = entitiesWithAvatars.map((e)=>`<a href="/entities/${tlz.openRepos[0].instance_id}/${e.id}" title="${e.name || e.attributes[0].value}">${avatar(true, e, "avatar-sm avatar-rounded")}</a>`).join("");
+		const avatars = entitiesWithAvatars.map((e)=>`<a href="/entities/${tlz.openRepos[0].instance_id}/${e.id}" title="${escapeHTML(e.name || e.attributes?.[0]?.value || 'Unknown person')}">${avatar(true, e, "avatar-sm avatar-rounded")}</a>`).join("");
 		$('.avatar-list', elem).innerHTML = avatars+more;
 
 		// attach the conversation info to the card so we can fill out the filter when clicked
@@ -322,11 +323,15 @@ async function renderConversationChunk(direction, version = conversationVersion)
 		
 		
 		// TODO: display some filler/information if there's no items
-		if (!results.items) {
+		if (!results.items?.length) {
 			if (direction == "newer") {
 				_veryEnd = true;
 			} else if (direction == "older") {
 				_veryBeginning = true;
+			}
+			if (!direction) {
+				_veryBeginning = _veryEnd = true;
+				$('#convo-container .chat-bubbles').append(emptyState('No messages match these filters.'));
 			}
 			return;
 		}

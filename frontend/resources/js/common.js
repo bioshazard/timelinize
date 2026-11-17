@@ -121,52 +121,65 @@ Element.prototype.isEmpty = function() {
 
 
 function currentPageNum() {
-	return Number(new URLSearchParams(window.location.search).get('page') || 1);
+	const page = Number(new URLSearchParams(window.location.search).get('page'));
+	return Number.isSafeInteger(page) && page > 0 ? page : 1;
 }
 
 function activateTooltips() {
-	const tooltipList = [...$$('[data-bs-toggle="tooltip"]')].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+	const tooltipList = [...$$('[data-bs-toggle="tooltip"]')].map(tooltipTriggerEl => bootstrap.Tooltip.getOrCreateInstance(tooltipTriggerEl))
 }
 
 // updateFilterResults runs the page's render function again to replace .filter-results
 // with the latest parameters in the query string.
+// Ignore responses belonging to an older render or a page that was removed.
+function beginViewRender(element) {
+	const version = element._renderVersion = (element._renderVersion || 0) + 1;
+	return () => element.isConnected && element._renderVersion === version;
+}
+
+function emptyState(message) {
+	const element = document.createElement('div');
+	element.className = 'empty-state';
+	element.setAttribute('role', 'status');
+	element.textContent = message;
+	return element;
+}
+
+function showPageError(container) {
+	container.querySelector('.page-error')?.remove();
+	const error = document.createElement('div');
+	error.className = 'page-error alert alert-warning m-3';
+	error.setAttribute('role', 'alert');
+	const text = document.createElement('span');
+	text.textContent = 'Could not load this view. Check your connection and try again.';
+	const retry = document.createElement('button');
+	retry.className = 'btn ms-2';
+	retry.type = 'button';
+	retry.textContent = 'Retry';
+	retry.addEventListener('click', () => navigateSPA());
+	error.append(text, retry);
+	container.prepend(error);
+}
+
+let filterRenderTimer;
 function updateFilterResults() {
-	// fade out current results
-	$$('.filter-results:not(.d-none)').forEach(elem => elem.classList.add('opacity0'));
-
-	// if the results take a while to load, show a loading indicator
-	let slowLoadingHandle = setTimeout(function() {
-		const span = document.createElement('span');
-		span.classList.add('slow-loader', 'filter-loader');
-		$('.filter-results:not(.d-none)')?.insertAdjacentElement('beforebegin', span);
-	}, 1000);
-	
-	// once fadeout is complete, render the new results
-	setTimeout(async function() {
-		// update the results
-		await tlz.currentPageController?.render();
-
-		// I find it's generally expected to start at the top of the results after updating filters
-		// TODO: Not true on the conversation page, this can be a little racey with that
-		window.scrollTo({
-			top: 0,
-			left: 0,
-			behavior: 'instant'
-		});
-		
-		// after the rendering is complete, fade in results
-		// (need brief timeout to allow time for paint, I guess; otherwise browser just flashes in the content)
-		setTimeout(function() {
-			$$('.filter-results:not(.d-none)').forEach(elem => elem.classList.remove('opacity0'));
-			
-			// activate custom/Bootstrap tooltips on the page
-			activateTooltips();
-		}, 25);
-		
-		// hide any loading indicator
-		clearTimeout(slowLoadingHandle);
-		$('.slow-loader.filter-loader')?.remove();
-	}, 250);
+	clearTimeout(filterRenderTimer);
+	const controller = tlz.currentPageController;
+	const page = $('#page-content');
+	filterRenderTimer = setTimeout(async () => {
+		if (tlz.currentPageController !== controller) return;
+		page.querySelector('.page-error')?.remove();
+		page.setAttribute('aria-busy', 'true');
+		try {
+			await controller?.render?.();
+			if (tlz.currentPageController === controller) activateTooltips();
+		} catch (error) {
+			if (tlz.currentPageController === controller) showPageError(page);
+			console.error('Results could not be loaded', error);
+		} finally {
+			if (tlz.currentPageController === controller) page.removeAttribute('aria-busy');
+		}
+	}, 150);
 }
 
 // when filter inputs change, update query string and re-render page
@@ -635,3 +648,11 @@ function moveMapInto(mapContainerElem) {
 		}
 	}));
 }
+// Canvas charts need an explicit resize after rotation or a changed viewport.
+let chartResizeFrame;
+window.addEventListener('resize', () => {
+	cancelAnimationFrame(chartResizeFrame);
+	chartResizeFrame = requestAnimationFrame(() => {
+		for (const element of $$('#page-content *')) element.chart?.resize();
+	});
+});

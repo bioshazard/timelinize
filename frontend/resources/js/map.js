@@ -42,6 +42,7 @@ const popup = new mapboxgl.Popup({
 });
 
 async function loadAndRenderMapData() {
+	const stillCurrent = beginViewRender($('#map-page'));
 	// like a synchronous forEach (waits for all async funcs to finish), see: https://stackoverflow.com/a/37576787/1048862
 	await Promise.all(tlz.openRepos.map(async repo => {
 		// asynchronously load and render the heatmap (query could be slow)
@@ -69,6 +70,7 @@ async function loadAndRenderMapData() {
 			}
 		}
 		const results = await app.SearchItems(params);
+		if (!stillCurrent()) return;
 
 		console.log("PARAMS AND RESULTS:", params, results);
 
@@ -334,7 +336,9 @@ function makeMarker(repo, mapItem) {
 async function renderMapData(newMapData) {
 	const dataToRender = newMapData || mapData.results;
 
-	if (!dataToRender) return;
+	if (!dataToRender || !$('#map-page')) return;
+	$('#map-empty').classList.toggle('d-none', dataToRender.items.length > 0);
+	$('.bottom-island').classList.toggle('d-none', dataToRender.items.length === 0);
 
 	// show basic nav controls if not already present
 	if (!tlz.map.hasControl(tlz.map.tl_navControl)) {

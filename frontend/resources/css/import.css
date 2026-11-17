@@ -23,3 +23,10 @@
 td {
 	word-break: break-all;
 }
+
+@media (max-width: 767.98px) {
+  .accordion-button { flex-wrap: wrap; gap: .5rem; }
+  .card-header .btn-list { width: 100%; }
+  .table-responsive { max-width: 100%; }
+  .field-update-pref-priority .ts-control { flex-wrap: wrap; }
+}

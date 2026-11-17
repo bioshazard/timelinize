@@ -2472,6 +2472,7 @@ function newEntitySelect(element, maxItems, noWrap) {
 
 function filterToQueryString() {
 	var qs = new URLSearchParams(window.location.search);
+	qs.delete('page'); // changed filters always start at the first result page
 
 	// date(s)
 	if ($('.date-input')) {
@@ -2609,14 +2610,14 @@ async function queryStringToFilter() {
 
 	// entity
 	if ($('.entity-input') && qs.get("entity")) {
-		const initialEntity = Number(qs.get("entity"))
-		const entities = await app.SearchEntities({
-			repo: tlz.openRepos[0].instance_id,
-			row_id: [initialEntity]
-		});
-		if (entities?.length) {
-			$('.entity-input').tomselect.addOption(entities[0]);
-			$('.entity-input').tomselect.addItem(entities[0].id, true); // true = don't fire event (the updated filter gets submitted later)
+		const ids = qs.get('entity').split(',').map(Number).filter(id => Number.isSafeInteger(id) && id > 0);
+		if (ids.length) {
+			const entities = await app.SearchEntities({repo: tlz.openRepos[0].instance_id, row_id: ids});
+			const control = $('.entity-input')?.tomselect;
+			for (const entity of entities || []) {
+				control?.addOption(entity);
+				control?.addItem(entity.id, true);
+			}
 		}
 	}
 	if ($('#selected-entities-only') && qs.get("only_entity")) {
@@ -2640,7 +2641,7 @@ async function queryStringToFilter() {
 
 	// classes (item types)
 	const itemClasses = qs.get("class");
-	if (!itemClasses) {
+	if (itemClasses === null) {
 		// check all by default
 		for (var elem of $$('.tl-item-class-dropdown input[type=checkbox]')) {
 			elem.checked = true;
@@ -2648,7 +2649,8 @@ async function queryStringToFilter() {
 	} else {
 		// check only specified ones
 		for (const cl of itemClasses.split(",")) {
-			$(`.tl-item-class-dropdown input[type=checkbox][value="${cl}"]`).checked = true;
+			const input = [...$$('.tl-item-class-dropdown input[type=checkbox]')].find(input => input.value === cl);
+			if (input) input.checked = true;
 		}
 	}
 
@@ -2765,7 +2767,7 @@ function commonFilterSearchParams(params) {
 	// item classifications
 	const checkedItemClasses = $$('.filter .tl-item-class-dropdown input:checked');
 	const allItemClasses = $$('.filter .tl-item-class-dropdown input')
-	if (!params.classification && checkedItemClasses.length && checkedItemClasses.length < allItemClasses.length) {
+	if (!params.classification && allItemClasses.length && checkedItemClasses.length < allItemClasses.length) {
 		params.classification = [];
 		for (const elem of checkedItemClasses) {
 			params.classification.push(elem.value);
@@ -2899,4 +2901,8 @@ function drawHEIF(heicImage, canvasEl) {
 			ctx.putImageData(displayImageData, 0, 0);
 		}
 	}.bind(this));
+}
+
+function escapeHTML(value) {
+	return String(value ?? '').replace(/[&<>"']/g, char => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[char]));
 }

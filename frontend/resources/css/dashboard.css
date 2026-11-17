@@ -12,3 +12,8 @@
 .timeline-container-grid .minidisp-media > * {
 	max-height: 200px;
 }
+
+@media (max-width: 767.98px) {
+  .timeline-container-grid { grid-template-columns: minmax(0, 1fr); }
+  .row-deck > * { min-width: 0; }
+}

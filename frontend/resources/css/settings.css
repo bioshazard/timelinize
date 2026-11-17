@@ -31,3 +31,14 @@
 .selected-location {
 	background: var(--tblr-highlight-bg);
 }
+.settings-page .col-auto { width: 100%; min-width: 0; }
+.settings-page .form-control { max-width: 100%; }
+@media (max-width: 767.98px) {
+  .settings-nav { border-bottom: 1px solid var(--tblr-border-color); }
+  .settings-nav .list-group { flex-direction: row; flex-wrap: wrap; gap: .25rem; }
+  .settings-nav h4 { margin-top: .75rem !important; }
+  .settings-nav .list-group-item { width: auto; min-height: 44px; padding: .75rem; }
+  #locations-row { height: auto; }
+  #secret-location-picker { height: 280px; }
+  #secret-location-list-container { max-height: 240px; }
+}

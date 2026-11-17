@@ -37,3 +37,8 @@
 .table img {
 	height: 1.75em;
 }
+@media (max-width: 767.98px) {
+  .datagrid { --tblr-datagrid-item-width: 10rem; }
+  .page-header .d-flex { flex-wrap: wrap; gap: .5rem; }
+  .display-6 { font-size: 1.75rem; }
+}

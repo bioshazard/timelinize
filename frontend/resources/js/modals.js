@@ -6,6 +6,9 @@
 on('show.bs.modal', '#modal-merge-entity', async e => {
 	const entitySelectMerge = newEntitySelect($('#modal-merge-entity .entity-merge'), 1, true);
 	const entitySelectKeep = newEntitySelect($('#modal-merge-entity .entity-keep'), 1, true);
+	entitySelectMerge.clear(true);
+	entitySelectKeep.clear(true);
+	$('#do-entity-merge').classList.add('disabled');
 	const entityIDMerge =  e?.relatedTarget?.dataset?.entityIDMerge;
 	const entityIDKeep = e?.relatedTarget?.dataset?.entityIDKeep;
 	if (entityIDMerge) {
@@ -29,7 +32,8 @@ on('show.bs.modal', '#modal-merge-entity', async e => {
 on('change', '#modal-merge-entity select', e => {
 	const keepID = $('#modal-merge-entity .entity-keep').tomselect.getValue();
 	const mergeID = $('#modal-merge-entity .entity-merge').tomselect.getValue();
-	if (keepID && mergeID) {
+	$('#do-entity-merge').title = Number(mergeID) === 1 ? 'Keep the timeline owner as the remaining entity.' : '';
+	if (keepID && mergeID && String(keepID) !== String(mergeID) && Number(mergeID) !== 1) {
 		$('#do-entity-merge').classList.remove('disabled');
 	} else {
 		$('#do-entity-merge').classList.add('disabled');
@@ -37,19 +41,20 @@ on('change', '#modal-merge-entity select', e => {
 });
 
 on('click', '#do-entity-merge', async e => {
-	let keepID = $('#modal-merge-entity .entity-keep').tomselect.getValue();
-	let mergeID = $('#modal-merge-entity .entity-merge').tomselect.getValue();
-	if (!keepID || !mergeID) return;
-	keepID = Number(keepID);
-	mergeID = Number(mergeID);
-	await app.MergeEntities(tlz.openRepos[0].instance_id, keepID, [mergeID]);
-	notify({
-		type: "success",
-		title: `Entities merged`,
-		duration: 2000
-	});
-	// also update owner picture at the top if its entity was in the merge
-	if (keepID == 1 || mergeID == 1) {
-		updateRepoOwners(true);
-	}
+	e.preventDefault();
+	const button = $('#do-entity-merge');
+	if (button.classList.contains('disabled')) return;
+	const keepID = Number($('#modal-merge-entity .entity-keep').tomselect.getValue());
+	const mergeID = Number($('#modal-merge-entity .entity-merge').tomselect.getValue());
+	if (!keepID || !mergeID || keepID === mergeID || mergeID === 1) return;
+	button.classList.add('disabled');
+	try {
+		await app.MergeEntities(tlz.openRepos[0].instance_id, keepID, [mergeID]);
+		bootstrap.Modal.getInstance($('#modal-merge-entity'))?.hide();
+		if (keepID === 1 || mergeID === 1) await updateRepoOwners(true);
+		notify({type: 'success', title: 'Entities merged', duration: 2000});
+		await navigateSPA(`/entities/${tlz.openRepos[0].instance_id}/${keepID}`, true);
+	} catch (error) {
+		notify({type: 'warning', title: 'Merge request unconfirmed', message: 'Refresh the entity list before trying again.'});
+	} finally { button.classList.remove('disabled'); }
 });

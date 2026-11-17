@@ -35,59 +35,6 @@ tlz.pageControllers = {
 			ctaButton.classList.add('btn-outline-primary');
 		}
 
-		// TODO: build a real dashboard, you fool
-		// async render() {
-		// 	async function loadAllGroups2(maxGroups = 10) {
-		// 		const limitPerBatch = 100;
-
-		// 		async function loadBatch(params) {
-		// 			const results = await app.SearchItems(params);
-		// 			// console.log("BATCH:", results.items);
-		// 			return results.items;
-		// 		}
-
-		// 		let items = [];
-		// 		const start = DateTime.now();
-
-		// 		do {
-		// 			const batch = await loadBatch({
-		// 				related: 1,
-		// 				end_timestamp: items?.[items.length-1]?.timestamp,
-		// 				order_by: "stored",
-		// 				limit: limitPerBatch
-		// 			});
-		// 			items = items.concat(batch);
-		// 			const groups = timelineGroups(items);
-
-		// 			if (groups.length > maxGroups || batch?.length < limitPerBatch) {
-		// 				return groups;
-		// 			}
-		// 		} while (-start.diffNow().as('seconds') < 5 && items.length < 500);
-
-		// 		return timelineGroups(items);
-		// 	}
-
-			
-		// 	const groups = await loadAllGroups2();
-
-		// 	console.log("ALL GROUPS:", groups)
-
-		// 	// $('.filter-results').replaceChildren(renderTimelineGroups(groups));
-
-		// 	options = {};
-
-		// 	groups.forEach((group, i) => {
-		// 		if (!group.length) return;
-				
-		// 		const display = itemMiniDisplay(group, options);
-				
-		// 		if (display.element) {
-		// 			// display.element.style.flex = '1';
-		// 			// display.element.style.minWidth = '400px';
-		// 			$('.timeline-container-grid').append(display.element);
-		// 		}
-		// 	});
-		// }
 	},
 
 	"/pages/setup.html": {
@@ -117,22 +64,7 @@ tlz.pageControllers = {
 		async load() {
 			changeSettingsTab(window.location.hash || "#general");
 
-			// next, load settings and populate fields
-
-			tlz.settings = await app.GetSettings();
-			console.log("SETTINGS:", tlz.settings);
-
-			// general
-			$('#mapbox-api-key').value = tlz.settings?.application?.mapbox_api_key || "";
-
-			// demo mode (obfuscation)
-			const obfs = tlz.settings?.application?.obfuscation;
-			$('#demo-mode-enabled').checked = obfs?.enabled == true;
-			$('#demo-mode-enabled').dataset.originalValue = $('#demo-mode-enabled').checked; // if it changes, page elements will be reloaded
-			$('#data-file-names').checked = obfs?.data_files == true;
-
-			// advanced
-			$('#website-dir').value = tlz.settings?.application?.website_dir || "";
+			await loadSettingsForm();
 		}
 	},
 
@@ -217,7 +149,7 @@ tlz.pageControllers = {
 			$('.pagination-container').append(cloneTemplate('#tpl-pagination'));
 
 			$('.tl-date-picker').append(newDatePicker({
-				passThru: {
+				passthru: {
 					range: true
 				},
 				rangeToggle: true,
@@ -275,6 +207,7 @@ tlz.pageControllers = {
 			}));
 		},
 		async render() {
+			const stillCurrent = beginViewRender($('.filter-results'));
 			// figure out the most recent day with content, and use that as the default/initial timeline
 			const presearchParams = {sort: "DESC"};
 			commonFilterSearchParams(presearchParams);
@@ -284,6 +217,7 @@ tlz.pageControllers = {
 					limit: 1,
 					flat: true
 				});
+				if (!stillCurrent()) return;
 				if (presearch?.items?.length) {
 					$('.filter .date-input').datepicker.selectDate(presearch.items[0].timestamp);
 				}
@@ -293,7 +227,8 @@ tlz.pageControllers = {
 
 			console.log("ALL GROUPS:", groups)
 
-			$('.filter-results').replaceChildren(renderTimelineGroups(groups));
+			if (!stillCurrent()) return;
+			$('.filter-results').replaceChildren(groups.length ? renderTimelineGroups(groups) : emptyState('No items match this date and these filters.'));
 		}
 	},
 

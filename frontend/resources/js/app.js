@@ -48,11 +48,6 @@ async function abortablePost(signal, endpoint, data, method = 'POST') {
 }
 
 async function myFetch(signal, endpoint, data, method) {
-	// disable form inputs if no modal is visible
-	const formFields = $$('form input, form button, form textarea');
-	if ($('#modal-preview')?.offsetParent === null) {
-		formFields.forEach((elem) => { elem.disabled = true; });
-	}
 
 	let headers = {};
 	if (data) {
@@ -67,13 +62,13 @@ async function myFetch(signal, endpoint, data, method) {
 		signal: signal
 	}).then(async (response) => {
 		if (response.ok) {
-			if (response.headers.get('Content-Type') == 'application/json')
+			if (response.headers.get('Content-Type')?.includes('application/json'))
 				return response.json();
 			else
 				return response;
 		}
 
-		if (response.headers.get('Content-Type') == 'application/json') {
+		if (response.headers.get('Content-Type')?.includes('application/json')) {
 			throw {
 				response: response,
 				error: await response.json()
@@ -81,11 +76,6 @@ async function myFetch(signal, endpoint, data, method) {
 		}
 
 		throw {response: response};
-	}).finally(function() {
-		// re-enable form inputs
-		if ($('#modal-preview')?.offsetParent === null) {
-			formFields.forEach((elem) => { elem.disabled = false; });
-		}
 	});
 }
 
@@ -167,6 +157,8 @@ const app = {
 		 return post("/api/repository-empty", repoID);
 	},
 	SearchItems(params) {
+		// Native omission means all classes; an explicit empty UI selection means none.
+		if (Array.isArray(params.classification) && params.classification.length === 0) return Promise.resolve({items: [], total: 0});
 		return post("/api/search-items", params);
 	},
 	SearchEntities(params) {
